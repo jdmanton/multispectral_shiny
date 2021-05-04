@@ -61,6 +61,16 @@ f <- data.frame(f)
 f$wavelength <- lambda
 fluorophores <- melt(f, id.vars='wavelength')
 
+# FP data
+fl <- read.csv('fluorophores_fps_1.csv')
+fl[is.na(fl)] <- 0
+fl <- fl[, c(2, 3, 4, 5, 6, 7, 8, 9, 1)]
+fl <- fl[fl$wavelength >= 450 & fl$wavelength <= 750, ]
+f <- fl
+fluorophores <- melt(fl, id.vars='wavelength')
+
+# Mixing matrix calcs
+
 
 ui <- fluidPage(
     titlePanel("8 camera multispectral system"),
@@ -88,7 +98,7 @@ ui <- fluidPage(
             plotOutput("cameraPlot", height='200px'),
             h3("Mixing matrix"),
             textOutput("conditionText"),
-            plotOutput("mixingPlot", height='200px')
+            plotOutput("mixingPlot", height='400px')
         )
     )
 )
@@ -107,27 +117,29 @@ server <- function(input, output) {
     
 
     output$fluorophorePlot <- renderPlot({
-        fluorophores$value[fluorophores$variable == 'X1'] <- fluorophores$value[fluorophores$variable == 'X1'] * input$f1b
-        fluorophores$value[fluorophores$variable == 'X2'] <- fluorophores$value[fluorophores$variable == 'X2'] * input$f2b
-        fluorophores$value[fluorophores$variable == 'X3'] <- fluorophores$value[fluorophores$variable == 'X3'] * input$f3b
-        fluorophores$value[fluorophores$variable == 'X4'] <- fluorophores$value[fluorophores$variable == 'X4'] * input$f4b
-        fluorophores$value[fluorophores$variable == 'X5'] <- fluorophores$value[fluorophores$variable == 'X5'] * input$f5b
-        fluorophores$value[fluorophores$variable == 'X6'] <- fluorophores$value[fluorophores$variable == 'X6'] * input$f6b
-        fluorophores$value[fluorophores$variable == 'X7'] <- fluorophores$value[fluorophores$variable == 'X7'] * input$f7b
-        fluorophores$value[fluorophores$variable == 'X8'] <- fluorophores$value[fluorophores$variable == 'X8'] * input$f8b
+        f[, 1] <- f[, 1] * input$f1b
+        f[, 2] <- f[, 2] * input$f2b
+        f[, 3] <- f[, 3] * input$f3b
+        f[, 4] <- f[, 4] * input$f4b
+        f[, 5] <- f[, 5] * input$f5b
+        f[, 6] <- f[, 6] * input$f6b
+        f[, 7] <- f[, 7] * input$f7b
+        f[, 8] <- f[, 8] * input$f8b
+        fluorophores <- melt(f, id.vars='wavelength')
         
-        ggplot(fluorophores, aes(x=wavelength, y=value, col=variable)) + geom_line() + labs(x='Wavelength / nm', y='Fluorescence') + theme(legend.position='none') + scale_color_manual(values=spectrum)
+        ggplot(fluorophores, aes(x=wavelength, y=value, col=variable)) + geom_line() + labs(x='Wavelength / nm', y='Fluorescence') + theme(legend.position='none') + scale_color_brewer(palette='Set2')
     })
     
     output$cameraPlot <- renderPlot({
-        fluorophores$value[fluorophores$variable == 'X1'] <- fluorophores$value[fluorophores$variable == 'X1'] * input$f1b
-        fluorophores$value[fluorophores$variable == 'X2'] <- fluorophores$value[fluorophores$variable == 'X2'] * input$f2b
-        fluorophores$value[fluorophores$variable == 'X3'] <- fluorophores$value[fluorophores$variable == 'X3'] * input$f3b
-        fluorophores$value[fluorophores$variable == 'X4'] <- fluorophores$value[fluorophores$variable == 'X4'] * input$f4b
-        fluorophores$value[fluorophores$variable == 'X5'] <- fluorophores$value[fluorophores$variable == 'X5'] * input$f5b
-        fluorophores$value[fluorophores$variable == 'X6'] <- fluorophores$value[fluorophores$variable == 'X6'] * input$f6b
-        fluorophores$value[fluorophores$variable == 'X7'] <- fluorophores$value[fluorophores$variable == 'X7'] * input$f7b
-        fluorophores$value[fluorophores$variable == 'X8'] <- fluorophores$value[fluorophores$variable == 'X8'] * input$f8b
+        f[, 1] <- f[, 1] * input$f1b
+        f[, 2] <- f[, 2] * input$f2b
+        f[, 3] <- f[, 3] * input$f3b
+        f[, 4] <- f[, 4] * input$f4b
+        f[, 5] <- f[, 5] * input$f5b
+        f[, 6] <- f[, 6] * input$f6b
+        f[, 7] <- f[, 7] * input$f7b
+        f[, 8] <- f[, 8] * input$f8b
+        fluorophores <- melt(f, id.vars='wavelength')
         
         emission <- ddply(fluorophores, .(wavelength), summarise, value=sum(value))
         cs <- channels_df
@@ -152,7 +164,7 @@ server <- function(input, output) {
         mmat <- cmat %*% fmat
         mmat <- mmat / max(mmat)
         
-        ggplot(melt(mmat), aes(x=Var2, y=Var1, fill=value)) + geom_tile() + labs(x='Fluorophore', y='Channel')
+        ggplot(melt(mmat), aes(x=Var2, y=Var1, fill=value)) + geom_tile() + labs(x='Fluorophore', y='Channel') + theme(axis.text.x = element_text(angle=90))
     })
     
     output$conditionText <- renderText({
