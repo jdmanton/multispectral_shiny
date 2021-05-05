@@ -63,6 +63,7 @@ fluorophores <- melt(f, id.vars='wavelength')
 
 # FP data
 fl <- read.csv('fluorophores_fps_1.csv')
+fl <- read.csv('live-cell_dye_spectra.csv', check.names = F)
 fl[is.na(fl)] <- 0
 fl <- fl[, c(2, 3, 4, 5, 6, 7, 8, 9, 1)]
 fl <- fl[fl$wavelength >= 450 & fl$wavelength <= 750, ]
@@ -77,6 +78,14 @@ ui <- fluidPage(
 
     sidebarLayout(
         sidebarPanel(
+            selectInput("f1n", "Fluorophore 1", choices=head(colnames(f), -1), selected=colnames(f)[1]),
+            selectInput("f2n", "Fluorophore 2", choices=head(colnames(f), -1), selected=colnames(f)[2]),
+            selectInput("f3n", "Fluorophore 3", choices=head(colnames(f), -1), selected=colnames(f)[3]),
+            selectInput("f4n", "Fluorophore 4", choices=head(colnames(f), -1), selected=colnames(f)[4]),
+            selectInput("f5n", "Fluorophore 5", choices=head(colnames(f), -1), selected=colnames(f)[5]),
+            selectInput("f6n", "Fluorophore 6", choices=head(colnames(f), -1), selected=colnames(f)[6]),
+            selectInput("f7n", "Fluorophore 7", choices=head(colnames(f), -1), selected=colnames(f)[7]),
+            selectInput("f8n", "Fluorophore 8", choices=head(colnames(f), -1), selected=colnames(f)[8]),
         ),
 
         mainPanel(
@@ -85,7 +94,7 @@ ui <- fluidPage(
             h3("Channel spectra"),
             plotOutput("channelPlot", height='200px'),
             h3("Fluorophore spectra"),
-            plotOutput("fluorophorePlot", height='200px'),
+            plotOutput("fluorophorePlot", height='300px'),
             h3("Camera spectra"),
             plotOutput("cameraPlot", height='200px'),
             h3("Mixing matrix"),
