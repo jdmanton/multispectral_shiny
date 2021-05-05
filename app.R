@@ -133,6 +133,7 @@ server <- function(input, output) {
     output$conditionText <- renderText({
         cmat <- t(as.matrix(channels_df[, 1:8]))
         fmat <- as.matrix(f[, 1:8])
+        fmat <- scale(fmat, center=F, scale=colSums(fmat))
         mmat <- cmat %*% fmat
         mmat <- mmat / max(mmat)
         
