@@ -77,14 +77,6 @@ ui <- fluidPage(
 
     sidebarLayout(
         sidebarPanel(
-            sliderInput("f1b", "Fluorophore 1 brightness", min = 0, max = 5, value = 1),
-            sliderInput("f2b", "Fluorophore 2 brightness", min = 0, max = 5, value = 1),
-            sliderInput("f3b", "Fluorophore 3 brightness", min = 0, max = 5, value = 1),
-            sliderInput("f4b", "Fluorophore 4 brightness", min = 0, max = 5, value = 1),
-            sliderInput("f5b", "Fluorophore 5 brightness", min = 0, max = 5, value = 1),
-            sliderInput("f6b", "Fluorophore 6 brightness", min = 0, max = 5, value = 1),
-            sliderInput("f7b", "Fluorophore 7 brightness", min = 0, max = 5, value = 1),
-            sliderInput("f8b", "Fluorophore 8 brightness", min = 0, max = 5, value = 1),
         ),
 
         mainPanel(
@@ -117,30 +109,10 @@ server <- function(input, output) {
     
 
     output$fluorophorePlot <- renderPlot({
-        f[, 1] <- f[, 1] * input$f1b
-        f[, 2] <- f[, 2] * input$f2b
-        f[, 3] <- f[, 3] * input$f3b
-        f[, 4] <- f[, 4] * input$f4b
-        f[, 5] <- f[, 5] * input$f5b
-        f[, 6] <- f[, 6] * input$f6b
-        f[, 7] <- f[, 7] * input$f7b
-        f[, 8] <- f[, 8] * input$f8b
-        fluorophores <- melt(f, id.vars='wavelength')
-        
-        ggplot(fluorophores, aes(x=wavelength, y=value, col=variable)) + geom_line() + labs(x='Wavelength / nm', y='Fluorescence') + theme(legend.position='none') + scale_color_brewer(palette='Set2')
+        ggplot(fluorophores, aes(x=wavelength, y=value, col=variable)) + geom_line() + labs(x='Wavelength / nm', y='Fluorescence', col='') + theme(legend.position='top') + scale_color_brewer(palette='Set2') + theme(legend.text=element_text(size=10))
     })
     
     output$cameraPlot <- renderPlot({
-        f[, 1] <- f[, 1] * input$f1b
-        f[, 2] <- f[, 2] * input$f2b
-        f[, 3] <- f[, 3] * input$f3b
-        f[, 4] <- f[, 4] * input$f4b
-        f[, 5] <- f[, 5] * input$f5b
-        f[, 6] <- f[, 6] * input$f6b
-        f[, 7] <- f[, 7] * input$f7b
-        f[, 8] <- f[, 8] * input$f8b
-        fluorophores <- melt(f, id.vars='wavelength')
-        
         emission <- ddply(fluorophores, .(wavelength), summarise, value=sum(value))
         cs <- channels_df
         cs[, 1:8] <- cs[, 1:8] * emission$value
@@ -151,15 +123,6 @@ server <- function(input, output) {
     
     output$mixingPlot <- renderPlot({
         cmat <- t(as.matrix(channels_df[, 1:8]))
-        cmat[1, ] <- cmat[1, ] * input$f1b
-        cmat[2, ] <- cmat[2, ] * input$f2b
-        cmat[3, ] <- cmat[3, ] * input$f3b
-        cmat[4, ] <- cmat[4, ] * input$f4b
-        cmat[5, ] <- cmat[5, ] * input$f5b
-        cmat[6, ] <- cmat[6, ] * input$f6b
-        cmat[7, ] <- cmat[7, ] * input$f7b
-        cmat[8, ] <- cmat[8, ] * input$f8b
-        
         fmat <- as.matrix(f[, 1:8])
         mmat <- cmat %*% fmat
         mmat <- mmat / max(mmat)
@@ -169,15 +132,6 @@ server <- function(input, output) {
     
     output$conditionText <- renderText({
         cmat <- t(as.matrix(channels_df[, 1:8]))
-        cmat[1, ] <- cmat[1, ] * input$f1b
-        cmat[2, ] <- cmat[2, ] * input$f2b
-        cmat[3, ] <- cmat[3, ] * input$f3b
-        cmat[4, ] <- cmat[4, ] * input$f4b
-        cmat[5, ] <- cmat[5, ] * input$f5b
-        cmat[6, ] <- cmat[6, ] * input$f6b
-        cmat[7, ] <- cmat[7, ] * input$f7b
-        cmat[8, ] <- cmat[8, ] * input$f8b
-        
         fmat <- as.matrix(f[, 1:8])
         mmat <- cmat %*% fmat
         mmat <- mmat / max(mmat)
