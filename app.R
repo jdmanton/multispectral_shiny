@@ -11,6 +11,7 @@ dichroics <- melt(dichroics_df, id.vars='wavelength')
 
 spectrum <- c('#0046ff', '#00c0ff', '#00ff92', '#4aff00', '#a3ff00', '#f0ff00', '#ffbe00', '#ff6300', '#ff0000')
 
+
 # Longpass dichroics
 # D1: 550
 # D2: 600
@@ -70,6 +71,12 @@ fl <- fl[fl$wavelength >= 450 & fl$wavelength <= 750, ]
 f <- fl
 fluorophores <- melt(fl, id.vars='wavelength')
 
+# Load fpbase.org data
+fpbase_data <- readRDS('fpbase_data.rds')
+fpbase_data <- fpbase_data[fpbase_data$Wavelength >= 450 & fpbase_data$Wavelength <= 750, ]
+fp_names <- unique(fpbase_data$FP)
+
+
 # Mixing matrix calcs
 
 
@@ -78,14 +85,14 @@ ui <- fluidPage(
 
     sidebarLayout(
         sidebarPanel(
-            selectInput("f1n", "Fluorophore 1", choices=head(colnames(f), -1), selected=colnames(f)[1]),
-            selectInput("f2n", "Fluorophore 2", choices=head(colnames(f), -1), selected=colnames(f)[2]),
-            selectInput("f3n", "Fluorophore 3", choices=head(colnames(f), -1), selected=colnames(f)[3]),
-            selectInput("f4n", "Fluorophore 4", choices=head(colnames(f), -1), selected=colnames(f)[4]),
-            selectInput("f5n", "Fluorophore 5", choices=head(colnames(f), -1), selected=colnames(f)[5]),
-            selectInput("f6n", "Fluorophore 6", choices=head(colnames(f), -1), selected=colnames(f)[6]),
-            selectInput("f7n", "Fluorophore 7", choices=head(colnames(f), -1), selected=colnames(f)[7]),
-            selectInput("f8n", "Fluorophore 8", choices=head(colnames(f), -1), selected=colnames(f)[8]),
+            selectInput("f1n", "Fluorophore 1", choices=fp_names, selected='mTFP1'),
+            selectInput("f2n", "Fluorophore 2", choices=fp_names, selected='EGFP'),
+            selectInput("f3n", "Fluorophore 3", choices=fp_names, selected='EYFP'),
+            selectInput("f4n", "Fluorophore 4", choices=fp_names, selected='mOrange'),
+            selectInput("f5n", "Fluorophore 5", choices=fp_names, selected='tdTomato'),
+            selectInput("f6n", "Fluorophore 6", choices=fp_names, selected='mCherry'),
+            selectInput("f7n", "Fluorophore 7", choices=fp_names, selected='mKate2'),
+            selectInput("f8n", "Fluorophore 8", choices=fp_names, selected='mNeptune'),
         ),
 
         mainPanel(
@@ -118,11 +125,15 @@ server <- function(input, output) {
     
 
     output$fluorophorePlot <- renderPlot({
-        ggplot(fluorophores, aes(x=wavelength, y=value, col=variable)) + geom_line() + labs(x='Wavelength / nm', y='Fluorescence', col='') + theme(legend.position='top') + scale_color_brewer(palette='Set2') + theme(legend.text=element_text(size=10))
+        fluorophores <- fpbase_data[fpbase_data$FP %in% c(input$f1n, input$f2n, input$f3n, input$f4n, input$f5n, input$f6n, input$f7n, input$f8n), ]
+        
+        ggplot(fluorophores, aes(x=Wavelength, y=Emission, col=FP)) + geom_line() + labs(x='Wavelength / nm', y='Fluorescence', col='') + theme(legend.position='top') + scale_color_brewer(palette='Set2') + theme(legend.text=element_text(size=10))
     })
     
     output$cameraPlot <- renderPlot({
-        emission <- ddply(fluorophores, .(wavelength), summarise, value=sum(value))
+        fluorophores <- fpbase_data[fpbase_data$FP %in% c(input$f1n, input$f2n, input$f3n, input$f4n, input$f5n, input$f6n, input$f7n, input$f8n), ]
+        
+        emission <- ddply(fluorophores, .(Wavelength), summarise, value=sum(Emission))
         cs <- channels_df
         cs[, 1:8] <- cs[, 1:8] * emission$value
         cs <- melt(cs, id.vars='wavelength')
@@ -131,8 +142,12 @@ server <- function(input, output) {
     })
     
     output$mixingPlot <- renderPlot({
+        fluorophores <- fpbase_data[fpbase_data$FP %in% c(input$f1n, input$f2n, input$f3n, input$f4n, input$f5n, input$f6n, input$f7n, input$f8n), ]
+        f <- dcast(fluorophores, Wavelength ~ FP, value.var='Emission')
+        f[is.na(f)] <- 0
+        
         cmat <- t(as.matrix(channels_df[, 1:8]))
-        fmat <- as.matrix(f[, 1:8])
+        fmat <- as.matrix(f[, 2:9])
         mmat <- cmat %*% fmat
         mmat <- mmat / max(mmat)
         
@@ -140,6 +155,10 @@ server <- function(input, output) {
     })
     
     output$conditionText <- renderText({
+        fluorophores <- fpbase_data[fpbase_data$FP %in% c(input$f1n, input$f2n, input$f3n, input$f4n, input$f5n, input$f6n, input$f7n, input$f8n), ]
+        f <- dcast(fluorophores, Wavelength ~ FP, value.var='Emission')
+        f[is.na(f)] <- 0
+        
         cmat <- t(as.matrix(channels_df[, 1:8]))
         fmat <- as.matrix(f[, 1:8])
         fmat <- scale(fmat, center=F, scale=colSums(fmat))
