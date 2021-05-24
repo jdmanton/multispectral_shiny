@@ -13,13 +13,13 @@ spectrum <- c('#0046ff', '#00c0ff', '#00ff92', '#4aff00', '#a3ff00', '#f0ff00', 
 
 
 # Longpass dichroics
-# D1: 550
-# D2: 600
-# D3: 625
-# D4: 500
-# D5: 475
-# D6: 525
-# D7: 575
+# D1: 570
+# D2: 625
+# D3: 650
+# D4: 525
+# D5: 500
+# D6: 550
+# D7: 600
 
 # Camera tree paths
 c1 <- '(RD1) * (RD4) * (RD5)'
