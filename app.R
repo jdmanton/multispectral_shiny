@@ -7,13 +7,16 @@ theme_set(theme_bw(base_size=20))
 update_geom_defaults("line", list(size = 1.75))
 
 dichroics_df <- read.csv('dichroics.csv')
+colnames(dichroics_df) <- c('wavelength', 'D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7')
+dichroics_df[is.na(dichroics_df)] <- 0
+dichroics_df <- dichroics_df[dichroics_df$wavelength <= 750 & dichroics_df$wavelength >= 450, ]
 dichroics <- melt(dichroics_df, id.vars='wavelength')
 
 spectrum <- c('#0046ff', '#00c0ff', '#00ff92', '#4aff00', '#a3ff00', '#f0ff00', '#ffbe00', '#ff6300', '#ff0000')
 
 
 # Longpass dichroics
-# D1: 570
+# D1: 575
 # D2: 625
 # D3: 650
 # D4: 525
