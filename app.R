@@ -174,7 +174,26 @@ server <- function(input, output) {
     # Display of camera-frame fluorophore spectra
     output$cameraPlot <- renderPlot({
         emission <- ddply(fluorophores(), .(Wavelength), summarise, value=sum(Emission))
+        
         cs <- channels_df
+        
+        if (nrow(emission) < nrow(cs)) {
+            # We've dropped some wavelengths, so put them back with zero
+            if (min(emission$Wavelength) != 450) {
+                low_wavelengths <- 450:(min(emission$Wavelength) - 1)
+                empty_data <- matrix(0, ncol=ncol(emission), nrow=length(low_wavelengths))
+                empty_data[, 1] <- low_wavelengths
+                colnames(empty_data) <- colnames(emission)
+                emission <- rbind(as.data.frame(empty_data), as.matrix(emission))
+            }
+            if (max(emission$Wavelength) != 750) {
+                high_wavelengths <- (max(emission$Wavelength) + 1):750
+                empty_data <- matrix(0, ncol=ncol(emission), nrow=length(high_wavelengths))
+                empty_data[, 1] <- high_wavelengths
+                emission <- rbind(as.matrix(emission), empty_data)
+            }
+        }
+        
         cs[, 1:8] <- cs[, 1:8] * emission$value
         cs <- melt(cs, id.vars='wavelength')
         
