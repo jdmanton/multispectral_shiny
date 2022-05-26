@@ -155,19 +155,19 @@ server <- function(input, output) {
     
     # Display of dichroic spectra
     output$dichroicPlot <- renderPlot({
-        ggplot(dichroics, aes(x=wavelength, y=value, col=variable)) + geom_line() + labs(x='Wavelength / nm', y='Transmission') + theme(legend.position='none') + scale_color_brewer(palette='Set2')
+        ggplot(dichroics, aes(x=wavelength, y=value, col=variable)) + geom_line() + labs(x='Wavelength / nm', y='Transmission') + theme(legend.position='none') + scale_color_brewer(palette='Set2') + coord_cartesian(xlim=c(450, 750))
     })
     
     
     # Display of camera channel spectra
     output$channelPlot <- renderPlot({
-        ggplot(channels, aes(x=wavelength, y=value, col=variable)) + geom_line() + labs(x='Wavelength / nm', y='Transmission') + theme(legend.position='none') + scale_color_manual(values=spectrum)
+        ggplot(channels, aes(x=wavelength, y=value, col=variable)) + geom_line() + labs(x='Wavelength / nm', y='Transmission') + theme(legend.position='none') + scale_color_manual(values=spectrum) + coord_cartesian(xlim=c(450, 750))
     })
     
     
     # Display of fluorophore spectra
     output$fluorophorePlot <- renderPlot({
-        ggplot(fluorophores(), aes(x=Wavelength, y=Emission, col=FP)) + geom_line() + labs(x='Wavelength / nm', y='Fluorescence', col='') + theme(legend.position='top') + scale_color_brewer(palette='Set2') + theme(legend.text=element_text(size=10))
+        ggplot(fluorophores(), aes(x=Wavelength, y=Emission, col=FP)) + geom_line() + labs(x='Wavelength / nm', y='Fluorescence', col='') + theme(legend.position='top') + scale_color_brewer(palette='Set2') + theme(legend.text=element_text(size=10)) + coord_cartesian(xlim=c(450, 750))
     })
     
     
@@ -197,7 +197,7 @@ server <- function(input, output) {
         cs[, 1:8] <- cs[, 1:8] * emission$value
         cs <- melt(cs, id.vars='wavelength')
         
-        ggplot(cs, aes(x=wavelength, y=value, col=variable)) + geom_line() + labs(x='Wavelength / nm', y='Signal') + theme(legend.position='none') + scale_color_manual(values=spectrum)
+        ggplot(cs, aes(x=wavelength, y=value, col=variable)) + geom_line() + labs(x='Wavelength / nm', y='Signal') + theme(legend.position='none') + scale_color_manual(values=spectrum) + coord_cartesian(xlim=c(450, 750))
     })
     
     
