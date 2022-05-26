@@ -200,7 +200,7 @@ server <- function(input, output) {
             selected_names <- c(input$f1n, input$f2n, input$f3n, input$f4n, input$f5n, input$f6n, input$f7n, input$f8n)
             selected_names <- selected_names[selected_names != "**None**"]
             selected_names <- paste(selected_names, collapse="_")
-            paste('Mixing_matrix_', selected_names, ".csv", sep = "")
+            paste('PRISM_mixing_matrix_', selected_names, ".csv", sep = "")
         },
         content = function(file) {
             write.csv(mixing_matrix(), file, row.names = FALSE)
