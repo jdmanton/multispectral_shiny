@@ -57,35 +57,23 @@ channels_df$wavelength <- dichroics_df$wavelength
 channels <- melt(channels_df, id.vars='wavelength')
 
 
-# # Fake fluorophore data
-lambda <- dichroics_df$wavelength
-fcs <- seq(470, by=25, length.out=8)
-f <- sapply(fcs, function(x) exp(-(lambda - x)^2 / (2 * 25^2)))
-f <- data.frame(f)
-f$wavelength <- lambda
-fluorophores <- melt(f, id.vars='wavelength')
-
-# FP data
-fl <- read.csv('fluorophores_fps_1.csv')
-fl <- read.csv('live-cell_dye_spectra.csv', check.names = F)
-fl[is.na(fl)] <- 0
-fl <- fl[, c(2, 3, 4, 5, 6, 7, 8, 9, 1)]
-fl <- fl[fl$wavelength >= 450 & fl$wavelength <= 750, ]
-f <- fl
-fluorophores <- melt(fl, id.vars='wavelength')
-
 # Load fpbase.org data
 fpbase_data <- readRDS('fpbase_data.rds')
 fpbase_data <- fpbase_data[fpbase_data$Wavelength >= 450 & fpbase_data$Wavelength <= 750, ]
+
+# Add blank spectrum
+w <- unique(fpbase_data$Wavelength)
+v <- 0 * w
+n <- rep("**None**", length(w))
+blank_spectrum <- data.frame(Wavelength=w, Emission=v, FP=n)
+fpbase_data <- rbind(fpbase_data, blank_spectrum)
+
 fp_names <- unique(fpbase_data$FP)
-
-
-# Mixing matrix calcs
 
 
 ui <- fluidPage(
     titlePanel("8 camera multispectral system"),
-
+    
     sidebarLayout(
         sidebarPanel(
             selectInput("f1n", "Fluorophore 1", choices=fp_names, selected='mTFP1'),
@@ -97,7 +85,7 @@ ui <- fluidPage(
             selectInput("f7n", "Fluorophore 7", choices=fp_names, selected='mKate2'),
             selectInput("f8n", "Fluorophore 8", choices=fp_names, selected='mNeptune'),
         ),
-
+        
         mainPanel(
             h3("Dichroic spectra"),
             plotOutput("dichroicPlot", height='200px'),
@@ -109,7 +97,8 @@ ui <- fluidPage(
             plotOutput("cameraPlot", height='200px'),
             h3("Mixing matrix"),
             textOutput("conditionText"),
-            plotOutput("mixingPlot", height='400px')
+            plotOutput("mixingPlot", height='400px'),
+            downloadButton("downloadData", "Download mixing matrix")
         )
     )
 )
@@ -117,26 +106,73 @@ ui <- fluidPage(
 
 
 server <- function(input, output) {
+    
+    # Reactive function for checking selected fluorophores
+    fluorophores <- reactive({
+        fluorophores <- fpbase_data[fpbase_data$FP == input$f1n, ]
+        if (input$f2n != "**None**") fluorophores <- rbind(fluorophores, fpbase_data[fpbase_data$FP == input$f2n, ])
+        if (input$f3n != "**None**") fluorophores <- rbind(fluorophores, fpbase_data[fpbase_data$FP == input$f3n, ])
+        if (input$f4n != "**None**") fluorophores <- rbind(fluorophores, fpbase_data[fpbase_data$FP == input$f4n, ])
+        if (input$f5n != "**None**") fluorophores <- rbind(fluorophores, fpbase_data[fpbase_data$FP == input$f5n, ])
+        if (input$f6n != "**None**") fluorophores <- rbind(fluorophores, fpbase_data[fpbase_data$FP == input$f6n, ])
+        if (input$f7n != "**None**") fluorophores <- rbind(fluorophores, fpbase_data[fpbase_data$FP == input$f7n, ])
+        if (input$f8n != "**None**") fluorophores <- rbind(fluorophores, fpbase_data[fpbase_data$FP == input$f8n, ])
+        fluorophores
+    })
+    
+    
+    # Reactive function for calculating mixing matrix
+    mixing_matrix <- reactive({
+        f <- dcast(fluorophores(), Wavelength ~ FP, value.var='Emission')
+        f[is.na(f)] <- 0
+        
+        cmat <- t(as.matrix(channels_df[, 1:8]))
+        
+        if (nrow(f) < ncol(cmat)) {
+            # We've dropped some wavelengths, so put them back with zero
+            if (min(f$Wavelength) != 450) {
+                low_wavelengths <- 450:(min(f$Wavelength) - 1)
+                empty_data <- matrix(0, ncol=ncol(f), nrow=length(low_wavelengths))
+                empty_data[, 1] <- low_wavelengths
+                colnames(empty_data) <- colnames(f)
+                f <- rbind(as.data.frame(empty_data), as.matrix(f))
+            }
+            if (max(f$Wavelength) != 750) {
+                high_wavelengths <- (max(f$Wavelength) + 1):750
+                empty_data <- matrix(0, ncol=ncol(f), nrow=length(high_wavelengths))
+                empty_data[, 1] <- high_wavelengths
+                f <- rbind(as.matrix(f), empty_data)
+            }
+        }
+        
+        fmat <- as.matrix(f[, 2:ncol(f)])
+        mmat <- cmat %*% fmat
+        mmat <- mmat / sum(mmat)
+        mmat
+    })
+    
+    
+    # Display of dichroic spectra
     output$dichroicPlot <- renderPlot({
-        # bins <- input$bins
         ggplot(dichroics, aes(x=wavelength, y=value, col=variable)) + geom_line() + labs(x='Wavelength / nm', y='Transmission') + theme(legend.position='none') + scale_color_brewer(palette='Set2')
     })
     
+    
+    # Display of camera channel spectra
     output$channelPlot <- renderPlot({
         ggplot(channels, aes(x=wavelength, y=value, col=variable)) + geom_line() + labs(x='Wavelength / nm', y='Transmission') + theme(legend.position='none') + scale_color_manual(values=spectrum)
     })
     
-
+    
+    # Display of fluorophore spectra
     output$fluorophorePlot <- renderPlot({
-        fluorophores <- fpbase_data[fpbase_data$FP %in% c(input$f1n, input$f2n, input$f3n, input$f4n, input$f5n, input$f6n, input$f7n, input$f8n), ]
-        
-        ggplot(fluorophores, aes(x=Wavelength, y=Emission, col=FP)) + geom_line() + labs(x='Wavelength / nm', y='Fluorescence', col='') + theme(legend.position='top') + scale_color_brewer(palette='Set2') + theme(legend.text=element_text(size=10))
+        ggplot(fluorophores(), aes(x=Wavelength, y=Emission, col=FP)) + geom_line() + labs(x='Wavelength / nm', y='Fluorescence', col='') + theme(legend.position='top') + scale_color_brewer(palette='Set2') + theme(legend.text=element_text(size=10))
     })
     
+    
+    # Display of camera-frame fluorophore spectra
     output$cameraPlot <- renderPlot({
-        fluorophores <- fpbase_data[fpbase_data$FP %in% c(input$f1n, input$f2n, input$f3n, input$f4n, input$f5n, input$f6n, input$f7n, input$f8n), ]
-        
-        emission <- ddply(fluorophores, .(Wavelength), summarise, value=sum(Emission))
+        emission <- ddply(fluorophores(), .(Wavelength), summarise, value=sum(Emission))
         cs <- channels_df
         cs[, 1:8] <- cs[, 1:8] * emission$value
         cs <- melt(cs, id.vars='wavelength')
@@ -144,32 +180,31 @@ server <- function(input, output) {
         ggplot(cs, aes(x=wavelength, y=value, col=variable)) + geom_line() + labs(x='Wavelength / nm', y='Signal') + theme(legend.position='none') + scale_color_manual(values=spectrum)
     })
     
+    
+    # Display of mixing matrix
     output$mixingPlot <- renderPlot({
-        fluorophores <- fpbase_data[fpbase_data$FP %in% c(input$f1n, input$f2n, input$f3n, input$f4n, input$f5n, input$f6n, input$f7n, input$f8n), ]
-        f <- dcast(fluorophores, Wavelength ~ FP, value.var='Emission')
-        f[is.na(f)] <- 0
-        
-        cmat <- t(as.matrix(channels_df[, 1:8]))
-        fmat <- as.matrix(f[, 2:9])
-        mmat <- cmat %*% fmat
-        mmat <- mmat / max(mmat)
-        
-        ggplot(melt(mmat), aes(x=Var2, y=Var1, fill=value)) + geom_tile() + labs(x='Fluorophore', y='Channel') + theme(axis.text.x = element_text(angle=90))
+        ggplot(melt(mixing_matrix()), aes(x=Var2, y=Var1, fill=value)) + geom_tile() + labs(x='Fluorophore', y='Channel') + theme(axis.text.x = element_text(angle=90))
     })
     
+    
+    # Display of mixing matrix condition number
     output$conditionText <- renderText({
-        fluorophores <- fpbase_data[fpbase_data$FP %in% c(input$f1n, input$f2n, input$f3n, input$f4n, input$f5n, input$f6n, input$f7n, input$f8n), ]
-        f <- dcast(fluorophores, Wavelength ~ FP, value.var='Emission')
-        f[is.na(f)] <- 0
-        
-        cmat <- t(as.matrix(channels_df[, 1:8]))
-        fmat <- as.matrix(f[, 1:8])
-        fmat <- scale(fmat, center=F, scale=colSums(fmat))
-        mmat <- cmat %*% fmat
-        mmat <- mmat / max(mmat)
-        
-        paste0("Condition number = ", round(kappa(mmat), 0))
+        paste0("Condition number = ", round(kappa(mixing_matrix()), 0))
     })
+    
+    
+    # Download button for mixing matrix as CSV
+    output$downloadData <- downloadHandler(
+        filename = function() {
+            selected_names <- c(input$f1n, input$f2n, input$f3n, input$f4n, input$f5n, input$f6n, input$f7n, input$f8n)
+            selected_names <- selected_names[selected_names != "**None**"]
+            selected_names <- paste(selected_names, collapse="_")
+            paste('Mixing_matrix_', selected_names, ".csv", sep = "")
+        },
+        content = function(file) {
+            write.csv(mixing_matrix(), file, row.names = FALSE)
+        }
+    )
 }
 
 
