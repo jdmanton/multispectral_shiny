@@ -84,6 +84,8 @@ ui <- fluidPage(
             selectInput("f6n", "Fluorophore 6", choices=fp_names, selected='**None**'),
             selectInput("f7n", "Fluorophore 7", choices=fp_names, selected='**None**'),
             selectInput("f8n", "Fluorophore 8", choices=fp_names, selected='**None**'),
+            div(style = "height:50px"),
+            downloadButton("downloadData", "Download mixing matrix")
         ),
         
         mainPanel(
@@ -97,8 +99,7 @@ ui <- fluidPage(
             plotOutput("cameraPlot", height='200px'),
             h3("Mixing matrix"),
             textOutput("conditionText"),
-            plotOutput("mixingPlot", height='400px'),
-            downloadButton("downloadData", "Download mixing matrix")
+            plotOutput("mixingPlot", height='400px')
         )
     )
 )
