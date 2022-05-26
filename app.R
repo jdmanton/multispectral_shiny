@@ -203,7 +203,9 @@ server <- function(input, output) {
     
     # Display of mixing matrix
     output$mixingPlot <- renderPlot({
-        ggplot(melt(mixing_matrix()), aes(x=Var2, y=Var1, fill=value)) + geom_tile() + labs(x='Fluorophore', y='Channel') + theme(axis.text.x = element_text(angle=90))
+        mix_mat <- mixing_matrix()
+        rownames(mix_mat) <- c('Ch 1', 'Ch 2', 'Ch 3', 'Ch 4', 'Ch 5', 'Ch 6', 'Ch 7', 'Ch 8')
+        ggplot(melt(mix_mat), aes(x=Var2, y=Var1, fill=value)) + geom_tile() + labs(x='Fluorophore', y='Channel', fill='') + theme(axis.text.x = element_text(angle=90)) + geom_text(aes(label=round(value, 3)), col='white')
     })
     
     
