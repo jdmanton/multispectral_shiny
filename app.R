@@ -76,14 +76,14 @@ ui <- fluidPage(
     
     sidebarLayout(
         sidebarPanel(
-            selectInput("f1n", "Fluorophore 1", choices=fp_names, selected='mTFP1'),
-            selectInput("f2n", "Fluorophore 2", choices=fp_names, selected='EGFP'),
-            selectInput("f3n", "Fluorophore 3", choices=fp_names, selected='EYFP'),
-            selectInput("f4n", "Fluorophore 4", choices=fp_names, selected='mOrange'),
-            selectInput("f5n", "Fluorophore 5", choices=fp_names, selected='tdTomato'),
-            selectInput("f6n", "Fluorophore 6", choices=fp_names, selected='mCherry'),
-            selectInput("f7n", "Fluorophore 7", choices=fp_names, selected='mKate2'),
-            selectInput("f8n", "Fluorophore 8", choices=fp_names, selected='mNeptune'),
+            selectInput("f1n", "Fluorophore 1", choices=fp_names, selected='EGFP'),
+            selectInput("f2n", "Fluorophore 2", choices=fp_names, selected='mCherry'),
+            selectInput("f3n", "Fluorophore 3", choices=fp_names, selected='**None**'),
+            selectInput("f4n", "Fluorophore 4", choices=fp_names, selected='**None**'),
+            selectInput("f5n", "Fluorophore 5", choices=fp_names, selected='**None**'),
+            selectInput("f6n", "Fluorophore 6", choices=fp_names, selected='**None**'),
+            selectInput("f7n", "Fluorophore 7", choices=fp_names, selected='**None**'),
+            selectInput("f8n", "Fluorophore 8", choices=fp_names, selected='**None**'),
         ),
         
         mainPanel(
