@@ -147,8 +147,11 @@ server <- function(input, output) {
         }
         
         fmat <- as.matrix(f[, 2:ncol(f)])
+        
+        # This is the silly R way of dividing a matrix by the sum of its columns...
+        fmat <- sweep(fmat, 2, colSums(fmat), '/')
+        
         mmat <- cmat %*% fmat
-        mmat <- mmat / sum(mmat)
         mmat
     })
     
