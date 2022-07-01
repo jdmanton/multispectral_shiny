@@ -6,11 +6,7 @@ library(plyr)
 theme_set(theme_bw(base_size=20))
 update_geom_defaults("line", list(size = 1.75))
 
-dichroics_df <- read.csv('dichroics.csv')
-colnames(dichroics_df) <- c('wavelength', 'D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7')
-dichroics_df[is.na(dichroics_df)] <- 0
-dichroics_df <- dichroics_df[dichroics_df$wavelength <= 750 & dichroics_df$wavelength >= 450, ]
-dichroics <- melt(dichroics_df, id.vars='wavelength')
+dichroic_choices <- c('491/514/532/561/594/633/670', '458/491/514/532/561/594/633')
 
 spectrum <- c('#0046ff', '#00c0ff', '#00ff92', '#4aff00', '#a3ff00', '#f0ff00', '#ffbe00', '#ff6300', '#ff0000')
 
@@ -43,18 +39,18 @@ c6e <- gsub('RD', '1 - dichroics_df$D', gsub('TD', 'dichroics_df$D', c6))
 c7e <- gsub('RD', '1 - dichroics_df$D', gsub('TD', 'dichroics_df$D', c7))
 c8e <- gsub('RD', '1 - dichroics_df$D', gsub('TD', 'dichroics_df$D', c8))
 
-c1d <- eval(parse(text=c1e))
-c2d <- eval(parse(text=c2e))
-c3d <- eval(parse(text=c3e))
-c4d <- eval(parse(text=c4e))
-c5d <- eval(parse(text=c5e))
-c6d <- eval(parse(text=c6e))
-c7d <- eval(parse(text=c7e))
-c8d <- eval(parse(text=c8e))
+# c1d <- eval(parse(text=c1e))
+# c2d <- eval(parse(text=c2e))
+# c3d <- eval(parse(text=c3e))
+# c4d <- eval(parse(text=c4e))
+# c5d <- eval(parse(text=c5e))
+# c6d <- eval(parse(text=c6e))
+# c7d <- eval(parse(text=c7e))
+# c8d <- eval(parse(text=c8e))
 
-channels_df <- data.frame(cbind(c1d, c2d, c3d, c4d, c5d, c6d, c7d, c8d))
-channels_df$wavelength <- dichroics_df$wavelength
-channels <- melt(channels_df, id.vars='wavelength')
+# channels_df <- data.frame(cbind(c1d, c2d, c3d, c4d, c5d, c6d, c7d, c8d))
+# channels_df$wavelength <- dichroics_df$wavelength
+# channels <- melt(channels_df, id.vars='wavelength')
 
 
 # Load fpbase.org data
@@ -76,6 +72,7 @@ ui <- fluidPage(
     
     sidebarLayout(
         sidebarPanel(
+            selectInput("dset", "Dichroic set", choices=dichroic_choices, selected=dichroic_choices[1]),
             selectInput("f1n", "Fluorophore 1", choices=fp_names, selected='EGFP'),
             selectInput("f2n", "Fluorophore 2", choices=fp_names, selected='mCherry'),
             selectInput("f3n", "Fluorophore 3", choices=fp_names, selected='**None**'),
@@ -107,8 +104,52 @@ ui <- fluidPage(
 
 
 server <- function(input, output) {
+
+    # Reactive functions    
+    dichroics_df <- reactive({
+        dset <- input$dset
+        dichroics_filename <- ifelse(input$dset == dichroic_choices[1], 'dichroics.csv', 'dichroics_bluer.csv')
+        
+        dichroics_df <- read.csv(dichroics_filename)
+        colnames(dichroics_df) <- c('wavelength', 'D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7')
+        dichroics_df[is.na(dichroics_df)] <- 0
+        dichroics_df <- dichroics_df[dichroics_df$wavelength <= 750 & dichroics_df$wavelength >= 450, ]
+        dichroics_df
+    })
     
-    # Reactive function for checking selected fluorophores
+    
+    dichroics <- reactive({
+        dichroics_df <- dichroics_df()
+        dichroics <- melt(dichroics_df, id.vars='wavelength')
+        dichroics
+    })
+    
+    
+    channels_df <- reactive({
+        dichroics <- dichroics()
+        dichroics_df <- dichroics_df()
+
+        c1d <- eval(parse(text=c1e))
+        c2d <- eval(parse(text=c2e))
+        c3d <- eval(parse(text=c3e))
+        c4d <- eval(parse(text=c4e))
+        c5d <- eval(parse(text=c5e))
+        c6d <- eval(parse(text=c6e))
+        c7d <- eval(parse(text=c7e))
+        c8d <- eval(parse(text=c8e))
+        
+        channels_df <- data.frame(cbind(c1d, c2d, c3d, c4d, c5d, c6d, c7d, c8d))
+        channels_df$wavelength <- dichroics_df$wavelength
+        channels_df
+    })
+    
+    
+    channels <- reactive({
+        channels <- melt(channels_df(), id.vars='wavelength')
+        channels
+    })
+    
+    
     fluorophores <- reactive({
         fluorophores <- fpbase_data[fpbase_data$FP == input$f1n, ]
         if (input$f2n != "**None**") fluorophores <- rbind(fluorophores, fpbase_data[fpbase_data$FP == input$f2n, ])
@@ -122,11 +163,10 @@ server <- function(input, output) {
     })
     
     
-    # Reactive function for calculating mixing matrix
     mixing_matrix <- reactive({
         f <- dcast(fluorophores(), Wavelength ~ FP, value.var='Emission')
         f[is.na(f)] <- 0
-        
+        channels_df <- channels_df()
         cmat <- t(as.matrix(channels_df[, 1:8]))
         
         if (nrow(f) < ncol(cmat)) {
@@ -156,29 +196,9 @@ server <- function(input, output) {
     })
     
     
-    # Display of dichroic spectra
-    output$dichroicPlot <- renderPlot({
-        ggplot(dichroics, aes(x=wavelength, y=value, col=variable)) + geom_line() + labs(x='Wavelength / nm', y='Transmission') + theme(legend.position='none') + scale_color_brewer(palette='Set2') + coord_cartesian(xlim=c(450, 750))
-    })
-    
-    
-    # Display of camera channel spectra
-    output$channelPlot <- renderPlot({
-        ggplot(channels, aes(x=wavelength, y=value, col=variable)) + geom_line() + labs(x='Wavelength / nm', y='Transmission') + theme(legend.position='none') + scale_color_manual(values=spectrum) + coord_cartesian(xlim=c(450, 750))
-    })
-    
-    
-    # Display of fluorophore spectra
-    output$fluorophorePlot <- renderPlot({
-        ggplot(fluorophores(), aes(x=Wavelength, y=Emission, col=FP)) + geom_line() + labs(x='Wavelength / nm', y='Fluorescence', col='') + theme(legend.position='top') + scale_color_brewer(palette='Set2') + theme(legend.text=element_text(size=10)) + coord_cartesian(xlim=c(450, 750))
-    })
-    
-    
-    # Display of camera-frame fluorophore spectra
-    output$cameraPlot <- renderPlot({
+    cs <- reactive({
         emission <- ddply(fluorophores(), .(Wavelength), summarise, value=sum(Emission))
-        
-        cs <- channels_df
+        cs <- channels_df()
         
         if (nrow(emission) < nrow(cs)) {
             # We've dropped some wavelengths, so put them back with zero
@@ -199,8 +219,31 @@ server <- function(input, output) {
         
         cs[, 1:8] <- cs[, 1:8] * emission$value
         cs <- melt(cs, id.vars='wavelength')
-        
-        ggplot(cs, aes(x=wavelength, y=value, col=variable)) + geom_line() + labs(x='Wavelength / nm', y='Signal') + theme(legend.position='none') + scale_color_manual(values=spectrum) + coord_cartesian(xlim=c(450, 750))
+        cs
+    })
+    
+    
+    # Display of dichroic spectra
+    output$dichroicPlot <- renderPlot({
+        ggplot(dichroics(), aes(x=wavelength, y=value, col=variable)) + geom_line() + labs(x='Wavelength / nm', y='Transmission') + theme(legend.position='none') + scale_color_brewer(palette='Set2') + coord_cartesian(xlim=c(450, 750))
+    })
+    
+    
+    # Display of camera channel spectra
+    output$channelPlot <- renderPlot({
+        ggplot(channels(), aes(x=wavelength, y=value, col=variable)) + geom_line() + labs(x='Wavelength / nm', y='Transmission') + theme(legend.position='none') + scale_color_manual(values=spectrum) + coord_cartesian(xlim=c(450, 750))
+    })
+    
+    
+    # Display of fluorophore spectra
+    output$fluorophorePlot <- renderPlot({
+        ggplot(fluorophores(), aes(x=Wavelength, y=Emission, col=FP)) + geom_line() + labs(x='Wavelength / nm', y='Fluorescence', col='') + theme(legend.position='top') + scale_color_brewer(palette='Set2') + theme(legend.text=element_text(size=10)) + coord_cartesian(xlim=c(450, 750))
+    })
+    
+    
+    # Display of camera-frame fluorophore spectra
+    output$cameraPlot <- renderPlot({
+        ggplot(cs(), aes(x=wavelength, y=value, col=variable)) + geom_line() + labs(x='Wavelength / nm', y='Signal') + theme(legend.position='none') + scale_color_manual(values=spectrum) + coord_cartesian(xlim=c(450, 750))
     })
     
     
