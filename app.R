@@ -54,17 +54,19 @@ c8e <- gsub('RD', '1 - dichroics_df$D', gsub('TD', 'dichroics_df$D', c8))
 
 
 # Load fpbase.org data
-fpbase_data <- readRDS('fpbase_data.rds')
+fpbase_data <- readRDS('fpbase_full_emission.rds')
 fpbase_data <- fpbase_data[fpbase_data$Wavelength >= 450 & fpbase_data$Wavelength <= 750, ]
+fpbase_data <- fpbase_data[order(fpbase_data$Fluor), ]
+fp_names <- unique(fpbase_data$Fluor)
+
 
 # Add blank spectrum
 w <- unique(fpbase_data$Wavelength)
 v <- 0 * w
 n <- rep("**None**", length(w))
-blank_spectrum <- data.frame(Wavelength=w, Emission=v, FP=n)
+blank_spectrum <- data.frame(Wavelength=w, Emission=v, Fluor=n)
 fpbase_data <- rbind(fpbase_data, blank_spectrum)
-
-fp_names <- unique(fpbase_data$FP)
+fp_names <- unique(fpbase_data$Fluor)
 
 
 ui <- fluidPage(
@@ -151,20 +153,20 @@ server <- function(input, output) {
     
     
     fluorophores <- reactive({
-        fluorophores <- fpbase_data[fpbase_data$FP == input$f1n, ]
-        if (input$f2n != "**None**") fluorophores <- rbind(fluorophores, fpbase_data[fpbase_data$FP == input$f2n, ])
-        if (input$f3n != "**None**") fluorophores <- rbind(fluorophores, fpbase_data[fpbase_data$FP == input$f3n, ])
-        if (input$f4n != "**None**") fluorophores <- rbind(fluorophores, fpbase_data[fpbase_data$FP == input$f4n, ])
-        if (input$f5n != "**None**") fluorophores <- rbind(fluorophores, fpbase_data[fpbase_data$FP == input$f5n, ])
-        if (input$f6n != "**None**") fluorophores <- rbind(fluorophores, fpbase_data[fpbase_data$FP == input$f6n, ])
-        if (input$f7n != "**None**") fluorophores <- rbind(fluorophores, fpbase_data[fpbase_data$FP == input$f7n, ])
-        if (input$f8n != "**None**") fluorophores <- rbind(fluorophores, fpbase_data[fpbase_data$FP == input$f8n, ])
+        fluorophores <- fpbase_data[fpbase_data$Fluor == input$f1n, ]
+        if (input$f2n != "**None**") fluorophores <- rbind(fluorophores, fpbase_data[fpbase_data$Fluor == input$f2n, ])
+        if (input$f3n != "**None**") fluorophores <- rbind(fluorophores, fpbase_data[fpbase_data$Fluor == input$f3n, ])
+        if (input$f4n != "**None**") fluorophores <- rbind(fluorophores, fpbase_data[fpbase_data$Fluor == input$f4n, ])
+        if (input$f5n != "**None**") fluorophores <- rbind(fluorophores, fpbase_data[fpbase_data$Fluor == input$f5n, ])
+        if (input$f6n != "**None**") fluorophores <- rbind(fluorophores, fpbase_data[fpbase_data$Fluor == input$f6n, ])
+        if (input$f7n != "**None**") fluorophores <- rbind(fluorophores, fpbase_data[fpbase_data$Fluor == input$f7n, ])
+        if (input$f8n != "**None**") fluorophores <- rbind(fluorophores, fpbase_data[fpbase_data$Fluor == input$f8n, ])
         fluorophores
     })
     
     
     mixing_matrix <- reactive({
-        f <- dcast(fluorophores(), Wavelength ~ FP, value.var='Emission')
+        f <- dcast(fluorophores(), Wavelength ~ Fluor, value.var='Emission')
         f[is.na(f)] <- 0
         channels_df <- channels_df()
         cmat <- t(as.matrix(channels_df[, 1:8]))
@@ -237,7 +239,7 @@ server <- function(input, output) {
     
     # Display of fluorophore spectra
     output$fluorophorePlot <- renderPlot({
-        ggplot(fluorophores(), aes(x=Wavelength, y=Emission, col=FP)) + geom_line() + labs(x='Wavelength / nm', y='Fluorescence', col='') + theme(legend.position='top') + scale_color_brewer(palette='Set2') + theme(legend.text=element_text(size=10)) + coord_cartesian(xlim=c(450, 750))
+        ggplot(fluorophores(), aes(x=Wavelength, y=Emission, col=Fluor)) + geom_line() + labs(x='Wavelength / nm', y='Fluorescence', col='') + theme(legend.position='top') + scale_color_brewer(palette='Set2') + theme(legend.text=element_text(size=10)) + coord_cartesian(xlim=c(450, 750))
     })
     
     
