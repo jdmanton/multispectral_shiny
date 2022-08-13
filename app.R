@@ -2,11 +2,12 @@ library(shiny)
 library(reshape2)
 library(ggplot2)
 library(plyr)
+library(colorspace)
 
 theme_set(theme_bw(base_size=20))
 update_geom_defaults("line", list(size = 1.75))
 
-dichroic_choices <- c('491/514/532/561/594/633/670', '458/491/514/532/561/594/633')
+dichroic_choices <- c('PRISM 491/514/532/561/594/633/670', 'PRISM 458/491/514/532/561/594/633', 'Zeiss QUASAR detector (reflection mode)')
 
 spectrum <- c('#0046ff', '#00c0ff', '#00ff92', '#4aff00', '#a3ff00', '#f0ff00', '#ffbe00', '#ff6300', '#ff0000')
 
@@ -55,7 +56,7 @@ c8e <- gsub('RD', '1 - dichroics_df$D', gsub('TD', 'dichroics_df$D', c8))
 
 # Load fpbase.org data
 fpbase_data <- readRDS('fpbase_full_emission.rds')
-fpbase_data <- fpbase_data[fpbase_data$Wavelength >= 450 & fpbase_data$Wavelength <= 750, ]
+fpbase_data <- fpbase_data[fpbase_data$Wavelength >= 400 & fpbase_data$Wavelength <= 750, ]
 fpbase_data <- fpbase_data[order(fpbase_data$Fluor), ]
 fp_names <- unique(fpbase_data$Fluor)
 
@@ -73,12 +74,12 @@ fp_names <- unique(fpbase_data$Fluor)
 
 
 ui <- fluidPage(
-    titlePanel("8 camera multispectral system"),
+    titlePanel("Spectral unmixing explorer"),
     
     sidebarLayout(
         sidebarPanel(
             checkboxInput("brightnessScale", "Scale fluorophore spectra by brightness", value = FALSE, width = NULL),
-            selectInput("dset", "Dichroic set", choices=dichroic_choices, selected=dichroic_choices[2]),
+            selectInput("dset", "Detector set", choices=dichroic_choices, selected=dichroic_choices[2]),
             selectInput("f1n", "Fluorophore 1", choices=fp_names, selected='TagBFP'),
             selectInput("f2n", "Fluorophore 2", choices=fp_names, selected='Cerulean'),
             selectInput("f3n", "Fluorophore 3", choices=fp_names, selected='mAzamiGreen'),
@@ -98,11 +99,11 @@ ui <- fluidPage(
             plotOutput("channelPlot", height='200px'),
             h3("Fluorophore spectra"),
             plotOutput("fluorophorePlot", height='300px'),
-            h3("Camera spectra"),
+            h3("Detector spectra"),
             plotOutput("cameraPlot", height='200px'),
             h3("Mixing matrix"),
             textOutput("conditionText"),
-            plotOutput("mixingPlot", height='400px')
+            plotOutput("mixingPlot", height='800px')
         )
     )
 )
@@ -119,7 +120,12 @@ server <- function(input, output) {
         dichroics_df <- read.csv(dichroics_filename)
         colnames(dichroics_df) <- c('wavelength', 'D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7')
         dichroics_df[is.na(dichroics_df)] <- 0
-        dichroics_df <- dichroics_df[dichroics_df$wavelength <= 750 & dichroics_df$wavelength >= 450, ]
+        dichroics_df <- dichroics_df[dichroics_df$wavelength <= 750 & dichroics_df$wavelength >= 400, ]
+        
+        if(input$dset == dichroic_choices[3]) {
+            dichroics_df[, 2:ncol(dichroics_df)] <- 0
+        }
+        
         dichroics_df
     })
     
@@ -146,6 +152,14 @@ server <- function(input, output) {
         
         channels_df <- data.frame(cbind(c1d, c2d, c3d, c4d, c5d, c6d, c7d, c8d))
         channels_df$wavelength <- dichroics_df$wavelength
+        
+        if(input$dset == 'Zeiss QUASAR detector (reflection mode)') {
+            quasar <- read.csv('quasar_detector.csv')
+            quasar <- cbind(quasar[, 2:ncol(quasar)], quasar$Wavelength)
+            colnames(quasar)[ncol(quasar)] <- 'wavelength'
+            channels_df <- quasar
+        }
+        
         channels_df
     })
     
@@ -173,12 +187,12 @@ server <- function(input, output) {
         f <- dcast(fluorophores(), Wavelength ~ Fluor, value.var='Emission')
         f[is.na(f)] <- 0
         channels_df <- channels_df()
-        cmat <- t(as.matrix(channels_df[, 1:8]))
+        cmat <- t(as.matrix(channels_df[, 1:(ncol(channels_df) - 1)]))
         
         if (nrow(f) < ncol(cmat)) {
             # We've dropped some wavelengths, so put them back with zero
-            if (min(f$Wavelength) != 450) {
-                low_wavelengths <- 450:(min(f$Wavelength) - 1)
+            if (min(f$Wavelength) != 400) {
+                low_wavelengths <- 400:(min(f$Wavelength) - 1)
                 empty_data <- matrix(0, ncol=ncol(f), nrow=length(low_wavelengths))
                 empty_data[, 1] <- low_wavelengths
                 colnames(empty_data) <- colnames(f)
@@ -208,8 +222,8 @@ server <- function(input, output) {
         
         if (nrow(emission) < nrow(cs)) {
             # We've dropped some wavelengths, so put them back with zero
-            if (min(emission$Wavelength) != 450) {
-                low_wavelengths <- 450:(min(emission$Wavelength) - 1)
+            if (min(emission$Wavelength) != 400) {
+                low_wavelengths <- 400:(min(emission$Wavelength) - 1)
                 empty_data <- matrix(0, ncol=ncol(emission), nrow=length(low_wavelengths))
                 empty_data[, 1] <- low_wavelengths
                 colnames(empty_data) <- colnames(emission)
@@ -223,7 +237,7 @@ server <- function(input, output) {
             }
         }
         
-        cs[, 1:8] <- cs[, 1:8] * emission$value
+        cs[, 1:(ncol(cs) - 1)] <- cs[, 1:(ncol(cs) - 1)] * emission$value
         cs <- melt(cs, id.vars='wavelength')
         cs
     })
@@ -231,13 +245,14 @@ server <- function(input, output) {
     
     # Display of dichroic spectra
     output$dichroicPlot <- renderPlot({
-        ggplot(dichroics(), aes(x=wavelength, y=value, col=variable)) + geom_line() + labs(x='Wavelength / nm', y='Transmission') + theme(legend.position='none') + scale_color_brewer(palette='Set2') + coord_cartesian(xlim=c(450, 750))
+        ggplot(dichroics(), aes(x=wavelength, y=value, col=variable)) + geom_line() + labs(x='Wavelength / nm', y='Transmission') + theme(legend.position='none') + scale_color_brewer(palette='Set2') + coord_cartesian(xlim=c(400, 750))
     })
     
     
     # Display of camera channel spectra
     output$channelPlot <- renderPlot({
-        ggplot(channels(), aes(x=wavelength, y=value, col=variable)) + geom_line() + labs(x='Wavelength / nm', y='Transmission') + theme(legend.position='none') + scale_color_manual(values=spectrum) + coord_cartesian(xlim=c(450, 750))
+        channels <- channels()
+        ggplot(channels, aes(x=wavelength, y=value, col=variable)) + geom_line() + labs(x='Wavelength / nm', y='Transmission') + theme(legend.position='none') + scale_color_manual(values=rev(rainbow_hcl(length(levels(channels$variable))))) + coord_cartesian(xlim=c(400, 750))
     })
     
     
@@ -247,20 +262,21 @@ server <- function(input, output) {
         if(input$brightnessScale) {
             fluors$Emission <- fluors$Emission * fluors$Brightness
         }
-        ggplot(fluors, aes(x=Wavelength, y=Emission, col=Fluor)) + geom_line() + labs(x='Wavelength / nm', y='Fluorescence', col='') + theme(legend.position='top') + scale_color_brewer(palette='Set2') + theme(legend.text=element_text(size=10)) + coord_cartesian(xlim=c(450, 750))
+        ggplot(fluors, aes(x=Wavelength, y=Emission, col=Fluor)) + geom_line() + labs(x='Wavelength / nm', y='Fluorescence', col='') + theme(legend.position='top') + scale_color_brewer(palette='Set2') + theme(legend.text=element_text(size=10)) + coord_cartesian(xlim=c(400, 750))
     })
     
     
     # Display of camera-frame fluorophore spectra
     output$cameraPlot <- renderPlot({
-        ggplot(cs(), aes(x=wavelength, y=value, col=variable)) + geom_line() + labs(x='Wavelength / nm', y='Signal') + theme(legend.position='none') + scale_color_manual(values=spectrum) + coord_cartesian(xlim=c(450, 750))
+        cs <- cs()
+        ggplot(cs, aes(x=wavelength, y=value, col=variable)) + geom_line() + labs(x='Wavelength / nm', y='Signal') + theme(legend.position='none') + scale_color_manual(values=rev(rainbow_hcl(length(levels(cs$variable))))) + coord_cartesian(xlim=c(400, 750))
     })
     
     
     # Display of mixing matrix
     output$mixingPlot <- renderPlot({
         mix_mat <- mixing_matrix()
-        rownames(mix_mat) <- c('Ch 1', 'Ch 2', 'Ch 3', 'Ch 4', 'Ch 5', 'Ch 6', 'Ch 7', 'Ch 8')
+        rownames(mix_mat) <- paste0("Ch ", seq(1, nrow(mix_mat)))
         ggplot(melt(mix_mat), aes(x=Var2, y=Var1, fill=value)) + geom_tile() + labs(x='Fluorophore', y='Channel', fill='') + theme(axis.text.x = element_text(angle=90)) + geom_text(aes(label=round(value, 3)), col='white')
     })
     
@@ -277,7 +293,8 @@ server <- function(input, output) {
             selected_names <- c(input$f1n, input$f2n, input$f3n, input$f4n, input$f5n, input$f6n, input$f7n, input$f8n)
             selected_names <- selected_names[selected_names != "**None**"]
             selected_names <- paste(selected_names, collapse="_")
-            paste('PRISM_mixing_matrix_', selected_names, ".csv", sep = "")
+            filename <- ifelse(input$dset == 'Zeiss QUASAR detector (reflection mode)', paste('QUASAR_mixing_matrix_', selected_names, ".csv", sep = ""), paste('PRISM_mixing_matrix_', selected_names, ".csv", sep = ""))
+            filename
         },
         content = function(file) {
             write.csv(mixing_matrix(), file, row.names = FALSE)
