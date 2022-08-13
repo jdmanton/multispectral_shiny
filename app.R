@@ -74,13 +74,13 @@ ui <- fluidPage(
     
     sidebarLayout(
         sidebarPanel(
-            selectInput("dset", "Dichroic set", choices=dichroic_choices, selected=dichroic_choices[1]),
-            selectInput("f1n", "Fluorophore 1", choices=fp_names, selected='EGFP'),
-            selectInput("f2n", "Fluorophore 2", choices=fp_names, selected='mCherry'),
-            selectInput("f3n", "Fluorophore 3", choices=fp_names, selected='**None**'),
-            selectInput("f4n", "Fluorophore 4", choices=fp_names, selected='**None**'),
-            selectInput("f5n", "Fluorophore 5", choices=fp_names, selected='**None**'),
-            selectInput("f6n", "Fluorophore 6", choices=fp_names, selected='**None**'),
+            selectInput("dset", "Dichroic set", choices=dichroic_choices, selected=dichroic_choices[2]),
+            selectInput("f1n", "Fluorophore 1", choices=fp_names, selected='TagBFP'),
+            selectInput("f2n", "Fluorophore 2", choices=fp_names, selected='Cerulean'),
+            selectInput("f3n", "Fluorophore 3", choices=fp_names, selected='mAzamiGreen'),
+            selectInput("f4n", "Fluorophore 4", choices=fp_names, selected='Citrine'),
+            selectInput("f5n", "Fluorophore 5", choices=fp_names, selected='mCherry'),
+            selectInput("f6n", "Fluorophore 6", choices=fp_names, selected='iRFP670'),
             selectInput("f7n", "Fluorophore 7", choices=fp_names, selected='**None**'),
             selectInput("f8n", "Fluorophore 8", choices=fp_names, selected='**None**'),
             div(style = "height:50px"),
