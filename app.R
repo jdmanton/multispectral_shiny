@@ -64,7 +64,10 @@ fp_names <- unique(fpbase_data$Fluor)
 w <- unique(fpbase_data$Wavelength)
 v <- 0 * w
 n <- rep("**None**", length(w))
-blank_spectrum <- data.frame(Wavelength=w, Emission=v, Fluor=n)
+qy <- rep(0, length(w))
+extCoeff <- rep(0, length(w))
+brightness <- rep(0, length(w))
+blank_spectrum <- data.frame(Wavelength=w, Emission=v, Fluor=n, QY=qy, extCoeff=extCoeff, Brightness=brightness)
 fpbase_data <- rbind(fpbase_data, blank_spectrum)
 fp_names <- unique(fpbase_data$Fluor)
 
@@ -74,6 +77,7 @@ ui <- fluidPage(
     
     sidebarLayout(
         sidebarPanel(
+            checkboxInput("brightnessScale", "Scale fluorophore spectra by brightness", value = FALSE, width = NULL),
             selectInput("dset", "Dichroic set", choices=dichroic_choices, selected=dichroic_choices[2]),
             selectInput("f1n", "Fluorophore 1", choices=fp_names, selected='TagBFP'),
             selectInput("f2n", "Fluorophore 2", choices=fp_names, selected='Cerulean'),
@@ -239,7 +243,11 @@ server <- function(input, output) {
     
     # Display of fluorophore spectra
     output$fluorophorePlot <- renderPlot({
-        ggplot(fluorophores(), aes(x=Wavelength, y=Emission, col=Fluor)) + geom_line() + labs(x='Wavelength / nm', y='Fluorescence', col='') + theme(legend.position='top') + scale_color_brewer(palette='Set2') + theme(legend.text=element_text(size=10)) + coord_cartesian(xlim=c(450, 750))
+        fluors <- fluorophores()
+        if(input$brightnessScale) {
+            fluors$Emission <- fluors$Emission * fluors$Brightness
+        }
+        ggplot(fluors, aes(x=Wavelength, y=Emission, col=Fluor)) + geom_line() + labs(x='Wavelength / nm', y='Fluorescence', col='') + theme(legend.position='top') + scale_color_brewer(palette='Set2') + theme(legend.text=element_text(size=10)) + coord_cartesian(xlim=c(450, 750))
     })
     
     
