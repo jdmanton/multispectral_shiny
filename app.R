@@ -4,22 +4,14 @@ library(ggplot2)
 library(plyr)
 library(colorspace)
 
+# ggplot theme settings
 theme_set(theme_bw(base_size=20))
 update_geom_defaults("line", list(size = 1.75))
 
+
+# List of PRISM dichroic / detector choices
 dichroic_choices <- c('PRISM 491/514/532/561/594/633/670', 'PRISM 458/491/514/532/561/594/633', 'Zeiss QUASAR detector (reflection mode)')
 
-spectrum <- c('#0046ff', '#00c0ff', '#00ff92', '#4aff00', '#a3ff00', '#f0ff00', '#ffbe00', '#ff6300', '#ff0000')
-
-
-# Longpass dichroics
-# D1: 575
-# D2: 625
-# D3: 650
-# D4: 525
-# D5: 500
-# D6: 550
-# D7: 600
 
 # Camera tree paths
 c1 <- '(RD1) * (RD4) * (RD5)'
@@ -40,28 +32,15 @@ c6e <- gsub('RD', '1 - dichroics_df$D', gsub('TD', 'dichroics_df$D', c6))
 c7e <- gsub('RD', '1 - dichroics_df$D', gsub('TD', 'dichroics_df$D', c7))
 c8e <- gsub('RD', '1 - dichroics_df$D', gsub('TD', 'dichroics_df$D', c8))
 
-# c1d <- eval(parse(text=c1e))
-# c2d <- eval(parse(text=c2e))
-# c3d <- eval(parse(text=c3e))
-# c4d <- eval(parse(text=c4e))
-# c5d <- eval(parse(text=c5e))
-# c6d <- eval(parse(text=c6e))
-# c7d <- eval(parse(text=c7e))
-# c8d <- eval(parse(text=c8e))
 
-# channels_df <- data.frame(cbind(c1d, c2d, c3d, c4d, c5d, c6d, c7d, c8d))
-# channels_df$wavelength <- dichroics_df$wavelength
-# channels <- melt(channels_df, id.vars='wavelength')
-
-
-# Load fpbase.org data
+# Load fpbase.org data (FPs + small molecule dyes)
 fpbase_data <- readRDS('fpbase_full_emission.rds')
 fpbase_data <- fpbase_data[fpbase_data$Wavelength >= 400 & fpbase_data$Wavelength <= 750, ]
 fpbase_data <- fpbase_data[order(fpbase_data$Fluor), ]
 fp_names <- unique(fpbase_data$Fluor)
 
 
-# Add blank spectrum
+# Add blank spectrum (needed for **None** option in UI)
 w <- unique(fpbase_data$Wavelength)
 v <- 0 * w
 n <- rep("**None**", length(w))
@@ -73,6 +52,10 @@ fpbase_data <- rbind(fpbase_data, blank_spectrum)
 fp_names <- unique(fpbase_data$Fluor)
 
 
+
+##################
+# User interface #
+##################
 ui <- fluidPage(
     titlePanel("Spectral unmixing explorer"),
     
@@ -110,6 +93,9 @@ ui <- fluidPage(
 
 
 
+####################
+# Application code #
+####################
 server <- function(input, output) {
 
     # Reactive functions    
