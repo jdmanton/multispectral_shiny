@@ -56,40 +56,46 @@ fp_names <- unique(fpbase_data$Fluor)
 ##################
 # User interface #
 ##################
-ui <- fluidPage(
-	titlePanel("Spectral unmixing explorer"),
-	
-	sidebarLayout(
-		sidebarPanel(
-			checkboxInput("brightnessScale", "Scale fluorophore spectra by brightness", value = FALSE, width = NULL),
-			selectInput("dset", "Detector set", choices=dichroic_choices, selected=dichroic_choices[2]),
-			selectInput("f1n", "Fluorophore 1", choices=fp_names, selected='TagBFP'),
-			selectInput("f2n", "Fluorophore 2", choices=fp_names, selected='Cerulean'),
-			selectInput("f3n", "Fluorophore 3", choices=fp_names, selected='mAzamiGreen'),
-			selectInput("f4n", "Fluorophore 4", choices=fp_names, selected='Citrine'),
-			selectInput("f5n", "Fluorophore 5", choices=fp_names, selected='mCherry'),
-			selectInput("f6n", "Fluorophore 6", choices=fp_names, selected='iRFP670'),
-			selectInput("f7n", "Fluorophore 7", choices=fp_names, selected='**None**'),
-			selectInput("f8n", "Fluorophore 8", choices=fp_names, selected='**None**'),
-			div(style = "height:50px"),
-			downloadButton("downloadData", "Download mixing matrix")
-		),
+ui <- function(request) {
+	fluidPage(
+		titlePanel("Spectral unmixing explorer"),
 		
-		mainPanel(
-			h3("Dichroic spectra"),
-			plotOutput("dichroicPlot", height='200px'),
-			h3("Channel spectra"),
-			plotOutput("channelPlot", height='200px'),
-			h3("Fluorophore spectra"),
-			plotOutput("fluorophorePlot", height='300px'),
-			h3("Detector spectra"),
-			plotOutput("cameraPlot", height='200px'),
-			h3("Mixing matrix"),
-			textOutput("conditionText"),
-			plotOutput("mixingPlot", height='800px')
+		sidebarLayout(
+			sidebarPanel(
+				checkboxInput("brightnessScale", "Scale fluorophore spectra by brightness", value = FALSE, width = NULL),
+				div(style = "height:25px"),
+				selectInput("dset", "Detector set", choices=dichroic_choices, selected=dichroic_choices[2]),
+				div(style = "height:25px"),
+				selectInput("f1n", "Fluorophore 1", choices=fp_names, selected='TagBFP'),
+				selectInput("f2n", "Fluorophore 2", choices=fp_names, selected='Cerulean'),
+				selectInput("f3n", "Fluorophore 3", choices=fp_names, selected='mAzamiGreen'),
+				selectInput("f4n", "Fluorophore 4", choices=fp_names, selected='Citrine'),
+				selectInput("f5n", "Fluorophore 5", choices=fp_names, selected='mCherry'),
+				selectInput("f6n", "Fluorophore 6", choices=fp_names, selected='iRFP670'),
+				selectInput("f7n", "Fluorophore 7", choices=fp_names, selected='**None**'),
+				selectInput("f8n", "Fluorophore 8", choices=fp_names, selected='**None**'),
+				div(style = "height:50px"),
+				bookmarkButton(label="Copy link with these settings", title="Share current settings via URL"),
+				div(style = "height:25px"),
+				downloadButton("downloadData", "Download mixing matrix")
+			),
+			
+			mainPanel(
+				h3("Dichroic spectra"),
+				plotOutput("dichroicPlot", height='200px'),
+				h3("Channel spectra"),
+				plotOutput("channelPlot", height='200px'),
+				h3("Fluorophore spectra"),
+				plotOutput("fluorophorePlot", height='300px'),
+				h3("Detector spectra"),
+				plotOutput("cameraPlot", height='200px'),
+				h3("Mixing matrix"),
+				textOutput("conditionText"),
+				plotOutput("mixingPlot", height='800px')
+			)
 		)
 	)
-)
+}
 
 
 
@@ -290,4 +296,4 @@ server <- function(input, output) {
 
 
 
-shinyApp(ui = ui, server = server)
+shinyApp(ui = ui, server = server, enableBookmarking = "url")
