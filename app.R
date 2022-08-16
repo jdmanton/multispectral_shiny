@@ -116,6 +116,7 @@ ui <- function(request) {
 				imageOutput("mixed_letters", height='64px'),
 				h3("Linearly unmixed image"),
 				imageOutput("unmixed_letters", height='64px'),
+				div(style="height:25px"),
 				h3("Phasor plot"),
 				plotOutput("phasorPlot", height='400px')
 			),
