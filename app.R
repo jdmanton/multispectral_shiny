@@ -4,6 +4,9 @@ library(ggplot2)
 library(plyr)
 library(colorspace)
 library(ggforce)
+library(tiff)
+library(png)
+library(MASS)
 
 # ggplot theme settings
 theme_set(theme_bw(base_size=20))
@@ -52,6 +55,9 @@ blank_spectrum <- data.frame(Wavelength=w, Emission=v, Fluor=n, QY=qy, extCoeff=
 fpbase_data <- rbind(fpbase_data, blank_spectrum)
 fp_names <- unique(fpbase_data$Fluor)
 
+# Load SPECTRUM letters image
+spectrum_letters <- readTIFF('spectrum_letters.tif', all=TRUE)
+letters_vec <- t(sapply(spectrum_letters, c))
 
 
 ##################
@@ -94,7 +100,14 @@ ui <- function(request) {
 				textOutput("conditionText"),
 				plotOutput("mixingPlot", height='800px'),
 				h3("Phasor plot"),
-				plotOutput("phasorPlot", height='400px')
+				plotOutput("phasorPlot", height='400px'),
+				h3("Ground truth image"),
+				imageOutput("letters", height='128px'),
+				h3("Mixed image"),
+				imageOutput("mixed_letters", height='128px'),
+				h3("Linearly unmixed image"),
+				imageOutput("unmixed_letters", height='128px'),
+				div(style = "height:128px")
 			)
 		)
 	)
@@ -273,6 +286,19 @@ server <- function(input, output) {
 	})
 	
 	
+	mixed_letters <- reactive({
+		mmat <- mixing_matrix()
+		letters_vec_subset <- letters_vec[1:ncol(mmat), ]
+		mixed_letters <- mmat %*% letters_vec_subset
+	})
+	
+	unmixed_letters <- reactive({
+		mmat <- mixing_matrix()
+		mixed <- mixed_letters()
+		unmixed_letters <- ginv(mmat) %*% mixed
+	})
+	
+	
 	# Display of dichroic spectra
 	output$dichroicPlot <- renderPlot({
 		ggplot(dichroics(), aes(x=wavelength, y=value, col=variable)) + geom_line() + labs(x='Wavelength / nm', y='Transmission') + theme(legend.position='none') + scale_color_brewer(palette='Set2') + coord_cartesian(xlim=c(400, 750))
@@ -322,6 +348,46 @@ server <- function(input, output) {
 		p <- phasors()
 		ggplot(p, aes(x=g, y=s, col=fluor)) + geom_point(size=5) + lims(x=c(-1, 1), y=c(-1, 1)) + labs(x='G', y='S', col='Fluorophore') + scale_color_brewer(palette='Set2') + geom_circle(inherit.aes=FALSE, aes(x0=0, y0=0, r=1), linetype='dashed', lwd=0.75) + theme(aspect.ratio=1, legend.position='top') + facet_grid(. ~ harmonic)
 	})
+	
+	
+	# Display of ground truth letters
+	output$letters <- renderImage({
+		letters <- letters_vec
+		unmixed_letters <- unmixed_letters()
+		ims <- lapply(1:nrow(unmixed_letters), function(x) {
+			im <- matrix(letters[x, ], 128, 128)
+		})
+		ims <- do.call(cbind, ims)
+		outfile <- tempfile(fileext=".tif")
+		writePNG(ims / max(ims), target=outfile)
+		list(src=outfile, contentType = "image/png", width=128*nrow(unmixed_letters), height=128)
+	}, deleteFile=TRUE)
+	
+	
+	# Display of mixed letters
+	output$mixed_letters <- renderImage({
+		mixed_letters <- mixed_letters()
+		ims <- lapply(1:nrow(mixed_letters), function(x) {
+			im <- matrix(mixed_letters[x, ], 128, 128)
+		})
+		ims <- do.call(cbind, ims)
+		outfile <- tempfile(fileext=".tif")
+		writePNG(ims / max(ims), target=outfile)
+		list(src=outfile, contentType = "image/png", width=128*nrow(mixed_letters), height=128)
+	}, deleteFile=TRUE)
+	
+	
+	# Display of linearly unmixed letters
+	output$unmixed_letters <- renderImage({
+		unmixed_letters <- unmixed_letters()
+		ims <- lapply(1:nrow(unmixed_letters), function(x) {
+			im <- matrix(unmixed_letters[x, ], 128, 128)
+		})
+		ims <- do.call(cbind, ims)
+		outfile <- tempfile(fileext=".tif")
+		writePNG(ims / max(ims), target=outfile)
+		list(src=outfile, contentType = "image/png", width=128*nrow(unmixed_letters), height=128)
+	}, deleteFile=TRUE)
 	
 	
 	# Download button for mixing matrix as CSV
