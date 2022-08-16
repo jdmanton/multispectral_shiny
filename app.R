@@ -328,7 +328,7 @@ server <- function(input, output) {
 		if(input$brightnessScale) {
 			fluors$Emission <- fluors$Emission * fluors$Brightness
 		}
-		ggplot(fluors, aes(x=Wavelength, y=Emission, col=Fluor)) + geom_line() + labs(x='Wavelength / nm', y='Fluorescence', col='') + theme(legend.position='top') + scale_color_brewer(palette='Set2') + theme(legend.text=element_text(size=10)) + coord_cartesian(xlim=c(400, 750))
+		ggplot(fluors, aes(x=Wavelength, y=Emission, col=Fluor)) + geom_line() + labs(x='Wavelength / nm', y='Fluorescence', col='') + theme(legend.position='top') + scale_color_brewer(palette='Set2') + coord_cartesian(xlim=c(400, 750))
 	})
 	
 	
