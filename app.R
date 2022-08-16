@@ -103,9 +103,7 @@ ui <- function(request) {
 				plotOutput("fluorophorePlot", height='300px'),
 				h3("Mixing matrix"),
 				textOutput("conditionText"),
-				plotOutput("mixingPlot", height='800px'),
-				h3("Phasor plot"),
-				plotOutput("phasorPlot", height='400px')
+				plotOutput("mixingPlot", height='800px')
 			),
 			column(6,
 				h3("Channel spectra"),
@@ -113,11 +111,13 @@ ui <- function(request) {
 				h3("Detector spectra"),
 				plotOutput("cameraPlot", height='200px'),
 				h3("Ground truth image"),
-				imageOutput("letters", height='128px'),
+				imageOutput("letters", height='64px'),
 				h3("Mixed image"),
-				imageOutput("mixed_letters", height='128px'),
+				imageOutput("mixed_letters", height='64px'),
 				h3("Linearly unmixed image"),
-				imageOutput("unmixed_letters", height='128px')
+				imageOutput("unmixed_letters", height='64px'),
+				h3("Phasor plot"),
+				plotOutput("phasorPlot", height='400px')
 			),
 		)
 	)
@@ -365,12 +365,12 @@ server <- function(input, output) {
 		letters <- letters_vec
 		unmixed_letters <- unmixed_letters()
 		ims <- lapply(1:nrow(unmixed_letters), function(x) {
-			im <- matrix(letters[x, ], 128, 128)
+			im <- matrix(letters[x, ], 64, 64)
 		})
 		ims <- do.call(cbind, ims)
 		outfile <- tempfile(fileext=".tif")
 		writePNG(ims / max(ims), target=outfile)
-		list(src=outfile, contentType = "image/png", width=128*nrow(unmixed_letters), height=128)
+		list(src=outfile, contentType = "image/png", width=64*nrow(unmixed_letters), height=64)
 	}, deleteFile=TRUE)
 	
 	
@@ -378,12 +378,12 @@ server <- function(input, output) {
 	output$mixed_letters <- renderImage({
 		mixed_letters <- mixed_letters()
 		ims <- lapply(1:nrow(mixed_letters), function(x) {
-			im <- matrix(mixed_letters[x, ], 128, 128)
+			im <- matrix(mixed_letters[x, ], 64, 64)
 		})
 		ims <- do.call(cbind, ims)
 		outfile <- tempfile(fileext=".tif")
 		writePNG(ims / max(ims), target=outfile)
-		list(src=outfile, contentType = "image/png", width=128*nrow(mixed_letters), height=128)
+		list(src=outfile, contentType = "image/png", width=64*nrow(mixed_letters), height=64)
 	}, deleteFile=TRUE)
 	
 	
@@ -391,12 +391,12 @@ server <- function(input, output) {
 	output$unmixed_letters <- renderImage({
 		unmixed_letters <- unmixed_letters()
 		ims <- lapply(1:nrow(unmixed_letters), function(x) {
-			im <- matrix(unmixed_letters[x, ], 128, 128)
+			im <- matrix(unmixed_letters[x, ], 64, 64)
 		})
 		ims <- do.call(cbind, ims)
 		outfile <- tempfile(fileext=".tif")
 		writePNG(ims / max(ims), target=outfile)
-		list(src=outfile, contentType = "image/png", width=128*nrow(unmixed_letters), height=128)
+		list(src=outfile, contentType = "image/png", width=64*nrow(unmixed_letters), height=64)
 	}, deleteFile=TRUE)
 	
 	
