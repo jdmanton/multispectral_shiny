@@ -96,18 +96,17 @@ ui <- function(request) {
 				plotOutput("fluorophorePlot", height='300px'),
 				h3("Detector spectra"),
 				plotOutput("cameraPlot", height='200px'),
-				h3("Mixing matrix"),
-				textOutput("conditionText"),
-				plotOutput("mixingPlot", height='800px'),
-				h3("Phasor plot"),
-				plotOutput("phasorPlot", height='400px'),
 				h3("Ground truth image"),
 				imageOutput("letters", height='128px'),
 				h3("Mixed image"),
 				imageOutput("mixed_letters", height='128px'),
 				h3("Linearly unmixed image"),
 				imageOutput("unmixed_letters", height='128px'),
-				div(style = "height:128px")
+				h3("Mixing matrix"),
+				textOutput("conditionText"),
+				plotOutput("mixingPlot", height='800px'),
+				h3("Phasor plot"),
+				plotOutput("phasorPlot", height='400px')
 			)
 		)
 	)
