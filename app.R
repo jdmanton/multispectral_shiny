@@ -3,6 +3,7 @@ library(reshape2)
 library(ggplot2)
 library(plyr)
 library(colorspace)
+library(ggforce)
 
 # ggplot theme settings
 theme_set(theme_bw(base_size=20))
@@ -91,7 +92,9 @@ ui <- function(request) {
 				plotOutput("cameraPlot", height='200px'),
 				h3("Mixing matrix"),
 				textOutput("conditionText"),
-				plotOutput("mixingPlot", height='800px')
+				plotOutput("mixingPlot", height='800px'),
+				h3("Phasor plot"),
+				plotOutput("phasorPlot", height='400px')
 			)
 		)
 	)
@@ -235,6 +238,41 @@ server <- function(input, output) {
 	})
 	
 	
+	calc_s <- function(wavelengths, intensities, harmonic) {
+		sine_function <- sin(2 * pi * harmonic * (wavelengths - 400) / (750 - 400))
+		s <- sum(sine_function * intensities) / sum(intensities)
+		s
+	}
+	
+	calc_g <- function(wavelengths, intensities, harmonic) {
+		cosine_function <- cos(2 * pi * harmonic * (wavelengths - 400) / (750 - 400))
+		g <- sum(cosine_function * intensities) / sum(intensities)
+		g
+	}
+	
+	
+	phasors <- reactive({
+		fluors <- fluorophores()
+		
+		harmonics <- seq(1, 4)
+		phasor_harmonics <- lapply(harmonics, function(y) {
+			phasors_s <- sapply(unique(fluors$Fluor), function (x) {
+				ws <- fluors[fluors$Fluor == x, 'Wavelength']
+				intensities <- fluors[fluors$Fluor == x, 'Emission']
+				s <- calc_s(ws, intensities, y)
+			})
+			phasors_g <- sapply(unique(fluors$Fluor), function (x) {
+				ws <- fluors[fluors$Fluor == x, 'Wavelength']
+				intensities <- fluors[fluors$Fluor == x, 'Emission']
+				g <- calc_g(ws, intensities, y)
+			})
+			phasors <- data.frame(s=phasors_s, g=phasors_g, fluor=names(phasors_s), harmonic=paste0("Harmonic ", y))
+		})
+		
+		phasor_harmonics <- do.call(rbind, phasor_harmonics)
+	})
+	
+	
 	# Display of dichroic spectra
 	output$dichroicPlot <- renderPlot({
 		ggplot(dichroics(), aes(x=wavelength, y=value, col=variable)) + geom_line() + labs(x='Wavelength / nm', y='Transmission') + theme(legend.position='none') + scale_color_brewer(palette='Set2') + coord_cartesian(xlim=c(400, 750))
@@ -276,6 +314,13 @@ server <- function(input, output) {
 	# Display of mixing matrix condition number
 	output$conditionText <- renderText({
 		paste0("Condition number = ", round(kappa(mixing_matrix()), 0))
+	})
+	
+	
+	# Display of phasor plot
+	output$phasorPlot <- renderPlot({
+		p <- phasors()
+		ggplot(p, aes(x=g, y=s, col=fluor)) + geom_point(size=5) + lims(x=c(-1, 1), y=c(-1, 1)) + labs(x='G', y='S', col='Fluorophore') + scale_color_brewer(palette='Set2') + geom_circle(inherit.aes=FALSE, aes(x0=0, y0=0, r=1), linetype='dashed', lwd=0.75) + theme(aspect.ratio=1, legend.position='top') + facet_grid(. ~ harmonic)
 	})
 	
 	
