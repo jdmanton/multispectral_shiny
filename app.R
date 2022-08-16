@@ -9,7 +9,7 @@ library(png)
 library(MASS)
 
 # ggplot theme settings
-theme_set(theme_bw(base_size=15))
+theme_set(theme_bw(base_size=18))
 update_geom_defaults("line", list(size = 1.75))
 
 
