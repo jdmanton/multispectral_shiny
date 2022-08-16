@@ -67,33 +67,45 @@ ui <- function(request) {
 	fluidPage(
 		titlePanel("Spectral unmixing explorer"),
 		
-		sidebarLayout(
-			sidebarPanel(
-				checkboxInput("brightnessScale", "Scale fluorophore spectra by brightness", value = FALSE, width = NULL),
-				div(style = "height:25px"),
-				selectInput("dset", "Detector set", choices=dichroic_choices, selected=dichroic_choices[2]),
-				div(style = "height:25px"),
-				selectInput("f1n", "Fluorophore 1", choices=fp_names, selected='TagBFP'),
-				selectInput("f2n", "Fluorophore 2", choices=fp_names, selected='Cerulean'),
-				selectInput("f3n", "Fluorophore 3", choices=fp_names, selected='mAzamiGreen'),
-				selectInput("f4n", "Fluorophore 4", choices=fp_names, selected='Citrine'),
-				selectInput("f5n", "Fluorophore 5", choices=fp_names, selected='mCherry'),
-				selectInput("f6n", "Fluorophore 6", choices=fp_names, selected='iRFP670'),
-				selectInput("f7n", "Fluorophore 7", choices=fp_names, selected='**None**'),
-				selectInput("f8n", "Fluorophore 8", choices=fp_names, selected='**None**'),
-				div(style = "height:50px"),
-				bookmarkButton(label="Copy link with these settings", title="Share current settings via URL"),
-				div(style = "height:25px"),
-				downloadButton("downloadData", "Download mixing matrix")
-			),
+		fluidRow(
+			column(1, bookmarkButton(label="Copy link", title="Share current settings via URL")),
+			column(2, downloadButton("downloadData", "Download mixing matrix")),
+			column(3, checkboxInput("brightnessScale", "Scale fluorophore spectra by brightness", value = FALSE, width = NULL))
+		),
+		
+		fluidRow(
+			column(4, selectInput("dset", "Detector set", choices=dichroic_choices, selected=dichroic_choices[2]))
+		),
+		
+		fluidRow(
+			column(3, selectInput("f1n", "Fluorophore 1", choices=fp_names, selected='TagBFP')),
+			column(3, selectInput("f2n", "Fluorophore 2", choices=fp_names, selected='Cerulean')),
+			column(3, selectInput("f3n", "Fluorophore 3", choices=fp_names, selected='mAzamiGreen')),
+			column(3, selectInput("f4n", "Fluorophore 4", choices=fp_names, selected='Citrine'))
+		),
+		
+		fluidRow(
+			column(3, selectInput("f5n", "Fluorophore 5", choices=fp_names, selected='mCherry')),
+			column(3, selectInput("f6n", "Fluorophore 6", choices=fp_names, selected='iRFP670')),
+			column(3, selectInput("f7n", "Fluorophore 7", choices=fp_names, selected='**None**')),
+			column(3, selectInput("f8n", "Fluorophore 8", choices=fp_names, selected='**None**'))
+		),
 			
-			mainPanel(
+		fluidRow(
+			column(6, 
 				h3("Dichroic spectra"),
 				plotOutput("dichroicPlot", height='200px'),
-				h3("Channel spectra"),
-				plotOutput("channelPlot", height='200px'),
 				h3("Fluorophore spectra"),
 				plotOutput("fluorophorePlot", height='300px'),
+				h3("Mixing matrix"),
+				textOutput("conditionText"),
+				plotOutput("mixingPlot", height='800px'),
+				h3("Phasor plot"),
+				plotOutput("phasorPlot", height='400px')
+			),
+			column(6,
+				h3("Channel spectra"),
+				plotOutput("channelPlot", height='200px'),
 				h3("Detector spectra"),
 				plotOutput("cameraPlot", height='200px'),
 				h3("Ground truth image"),
@@ -101,13 +113,8 @@ ui <- function(request) {
 				h3("Mixed image"),
 				imageOutput("mixed_letters", height='128px'),
 				h3("Linearly unmixed image"),
-				imageOutput("unmixed_letters", height='128px'),
-				h3("Mixing matrix"),
-				textOutput("conditionText"),
-				plotOutput("mixingPlot", height='800px'),
-				h3("Phasor plot"),
-				plotOutput("phasorPlot", height='400px')
-			)
+				imageOutput("unmixed_letters", height='128px')
+			),
 		)
 	)
 }
