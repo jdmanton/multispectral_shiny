@@ -67,11 +67,15 @@ ui <- function(request) {
 	fluidPage(
 		titlePanel("Spectral unmixing explorer"),
 		
+		div(style="height:25px"),
+		
 		fluidRow(
 			column(1, bookmarkButton(label="Copy link", title="Share current settings via URL")),
 			column(2, downloadButton("downloadData", "Download mixing matrix")),
 			column(3, checkboxInput("brightnessScale", "Scale fluorophore spectra by brightness", value = FALSE, width = NULL))
 		),
+		
+		div(style="height:25px"),
 		
 		fluidRow(
 			column(4, selectInput("dset", "Detector set", choices=dichroic_choices, selected=dichroic_choices[2]))
