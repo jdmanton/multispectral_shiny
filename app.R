@@ -58,6 +58,7 @@ fp_names <- unique(fpbase_data$Fluor)
 # Load SPECTRUM letters image
 spectrum_letters <- readTIFF('spectrum_letters.tif', all=TRUE)
 letters_vec <- t(sapply(spectrum_letters, c))
+letters_vec <- letters_vec / max(letters_vec)
 
 
 ##################
@@ -79,6 +80,10 @@ ui <- function(request) {
 		
 		fluidRow(
 			column(4, selectInput("dset", "Detector set", choices=dichroic_choices, selected=dichroic_choices[2]))
+		),
+		
+		fluidRow(
+			column(4, sliderInput("brightness", "Letter brightness", min=1, max=1000, value=100, round=TRUE))
 		),
 		
 		fluidRow(
@@ -300,7 +305,9 @@ server <- function(input, output) {
 	mixed_letters <- reactive({
 		mmat <- mixing_matrix()
 		letters_vec_subset <- letters_vec[1:ncol(mmat), ]
+		letters_vec_subset <- letters_vec_subset * input$brightness
 		mixed_letters <- mmat %*% letters_vec_subset
+		mixed_letters <- apply(mixed_letters, 2, function(x) rpois(length(x), x))
 	})
 	
 	unmixed_letters <- reactive({
