@@ -14,7 +14,7 @@ update_geom_defaults("line", list(size = 1.75))
 
 
 # List of PRISM dichroic / detector choices
-dichroic_choices <- c('PRISM 491/514/532/561/594/633/670', 'PRISM 458/491/514/532/561/594/633', 'Zeiss QUASAR detector (reflection mode)')
+dichroic_choices <- c('PRISM 491/514/532/561/594/633/670', 'PRISM 458/491/514/532/561/594/633', 'PRISM 458/491/514/532/561/594/670', 'Zeiss QUASAR detector (reflection mode)')
 
 
 # List of primary dichroic choices
@@ -147,14 +147,20 @@ server <- function(input, output) {
 	# Reactive functions    
 	dichroics_df <- reactive({
 		dset <- input$dset
-		dichroics_filename <- ifelse(input$dset == dichroic_choices[1], 'dichroics.csv', 'dichroics_bluer.csv')
+		# dichroics_filename <- ifelse(input$dset == dichroic_choices[1], 'dichroics_491-514-532-561-594-633-670.csv', 'dichroics_458-491-514-532-561-594-633.csv')
+		
+		dichroics_filename <- switch(dset,
+		                             'PRISM 491/514/532/561/594/633/670' = 'dichroics_491-514-532-561-594-633-670.csv',
+		                             'PRISM 458/491/514/532/561/594/633' = 'dichroics_458-491-514-532-561-594-633.csv',
+		                             'PRISM 458/491/514/532/561/594/670' = 'dichroics_458-491-514-532-561-594-670.csv',
+		                             'dichroics_458-491-514-532-561-594-633.csv')
 		
 		dichroics_df <- read.csv(dichroics_filename)
 		colnames(dichroics_df) <- c('wavelength', 'D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7')
 		dichroics_df[is.na(dichroics_df)] <- 0
 		dichroics_df <- dichroics_df[dichroics_df$wavelength <= 750 & dichroics_df$wavelength >= 400, ]
 		
-		if(input$dset == dichroic_choices[3]) {
+		if(input$dset == dichroic_choices[length(dichroic_choices)]) {
 			dichroics_df[, 2:ncol(dichroics_df)] <- 0
 		}
 		
