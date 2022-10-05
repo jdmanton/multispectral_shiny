@@ -17,6 +17,10 @@ update_geom_defaults("line", list(size = 1.75))
 dichroic_choices <- c('PRISM 491/514/532/561/594/633/670', 'PRISM 458/491/514/532/561/594/633', 'Zeiss QUASAR detector (reflection mode)')
 
 
+# List of primary dichroic choices
+primary_choices <- c('Spectrally flat (e.g. 80:20 beamsplitter)', 'Di03-R405/488/561/635')
+
+
 # Camera tree paths
 c1 <- '(RD1) * (RD4) * (RD5)'
 c2 <- '(RD1) * (RD4) * (TD5)'
@@ -77,6 +81,10 @@ ui <- function(request) {
 		),
 		
 		div(style="height:25px"),
+		
+		fluidRow(
+		    column(4, selectInput("primary", "Primary dichroic / notch filter", choices=primary_choices, selected=primary_choices[1]))
+		),
 		
 		fluidRow(
 			column(4, selectInput("dset", "Detector set", choices=dichroic_choices, selected=dichroic_choices[2]))
@@ -153,6 +161,12 @@ server <- function(input, output) {
 		dichroics_df
 	})
 	
+	primary_dichroic <- reactive({
+	    primary <- input$primary
+	    primary_filename <- ifelse(primary == primary_choices[1], 'primary_flat.csv', 'primary_opm.csv')
+	    primary_df <- read.csv(primary_filename)
+	})
+	
 	
 	dichroics <- reactive({
 		dichroics_df <- dichroics_df()
@@ -183,6 +197,9 @@ server <- function(input, output) {
 			colnames(quasar)[ncol(quasar)] <- 'wavelength'
 			channels_df <- quasar
 		}
+		
+		primary_df <- primary_dichroic()
+		channels_df[, 1:8] <- channels_df[, 1:8] * primary_df$Transmission
 		
 		channels_df
 	})
