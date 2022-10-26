@@ -18,7 +18,7 @@ dichroic_choices <- c('PRISM 491/514/532/561/594/633/670', 'PRISM 458/491/514/53
 
 
 # List of primary dichroic choices
-primary_choices <- c('Spectrally flat (e.g. 80:20 beamsplitter)', 'Di03-R405/488/561/635')
+primary_choices <- c('Spectrally flat (e.g. 80:20 beamsplitter)', 'Di03-R405/488/561/635', 'Di+Em 405/470/555/640')
 
 
 # Camera tree paths
@@ -169,7 +169,11 @@ server <- function(input, output) {
 	
 	primary_dichroic <- reactive({
 	    primary <- input$primary
-	    primary_filename <- ifelse(primary == primary_choices[1], 'primary_flat.csv', 'primary_opm.csv')
+	    primary_filename <- switch(primary,
+	    													 'Spectrally flat (e.g. 80:20 beamsplitter)' = 'primary_flat.csv',
+	    													 'Di03-R405/488/561/635' = 'primary_opm.csv',
+	    													 'Di+Em 405/470/555/640' = 'primary_crest.csv')
+	    
 	    primary_df <- read.csv(primary_filename)
 	})
 	
