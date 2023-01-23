@@ -379,6 +379,7 @@ server <- function(input, output) {
 	output$mixingPlot <- renderPlot({
 		mix_mat <- mixing_matrix()
 		rownames(mix_mat) <- paste0("Ch ", seq(1, nrow(mix_mat)))
+		colnames(mix_mat) <- paste0(colnames(mix_mat), ' (', round(colSums(mix_mat)*100), ' %)')
 		ggplot(melt(mix_mat), aes(x=Var2, y=Var1, fill=value)) + geom_tile(show.legend=FALSE) + labs(x='Fluorophore', y='Channel', fill='') + theme(axis.text.x = element_text(angle=90)) + geom_text(aes(label=round(value, 3)), col='white')
 	})
 	
