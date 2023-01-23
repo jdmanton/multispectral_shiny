@@ -286,6 +286,7 @@ server <- function(input, output) {
 				empty_data[, 1] <- high_wavelengths
 				emission <- rbind(as.matrix(emission), empty_data)
 			}
+			emission <- data.frame(emission)
 		}
 		
 		cs[, 1:(ncol(cs) - 1)] <- cs[, 1:(ncol(cs) - 1)] * emission$value
