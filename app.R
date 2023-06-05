@@ -18,7 +18,7 @@ dichroic_choices <- c('PRISM 491/514/532/561/594/633/670', 'PRISM 458/491/514/53
 
 
 # List of primary dichroic choices
-primary_choices <- c('Spectrally flat (e.g. 80:20 beamsplitter)', 'Di03-R405/488/561/635', 'Di+Em 405/470/555/640')
+primary_choices <- c('Spectrally flat (e.g. 80:20 beamsplitter)', 'Di03-R405/488/561/635', 'Di+Em 405/470/555/640', 'Di03-R405/488/561/635 + notch')
 
 
 # Camera tree paths
@@ -150,10 +150,10 @@ server <- function(input, output) {
 		# dichroics_filename <- ifelse(input$dset == dichroic_choices[1], 'dichroics_491-514-532-561-594-633-670.csv', 'dichroics_458-491-514-532-561-594-633.csv')
 		
 		dichroics_filename <- switch(dset,
-		                             'PRISM 491/514/532/561/594/633/670' = 'dichroics_491-514-532-561-594-633-670.csv',
-		                             'PRISM 458/491/514/532/561/594/633' = 'dichroics_458-491-514-532-561-594-633.csv',
-		                             'PRISM 458/491/514/532/561/594/670' = 'dichroics_458-491-514-532-561-594-670.csv',
-		                             'dichroics_458-491-514-532-561-594-633.csv')
+									 'PRISM 491/514/532/561/594/633/670' = 'dichroics_491-514-532-561-594-633-670.csv',
+									 'PRISM 458/491/514/532/561/594/633' = 'dichroics_458-491-514-532-561-594-633.csv',
+									 'PRISM 458/491/514/532/561/594/670' = 'dichroics_458-491-514-532-561-594-670.csv',
+									 'dichroics_458-491-514-532-561-594-633.csv')
 		
 		dichroics_df <- read.csv(dichroics_filename)
 		colnames(dichroics_df) <- c('wavelength', 'D1', 'D2', 'D3', 'D4', 'D5', 'D6', 'D7')
@@ -168,13 +168,14 @@ server <- function(input, output) {
 	})
 	
 	primary_dichroic <- reactive({
-	    primary <- input$primary
-	    primary_filename <- switch(primary,
-	    													 'Spectrally flat (e.g. 80:20 beamsplitter)' = 'primary_flat.csv',
-	    													 'Di03-R405/488/561/635' = 'primary_opm.csv',
-	    													 'Di+Em 405/470/555/640' = 'primary_crest.csv')
-	    
-	    primary_df <- read.csv(primary_filename)
+		primary <- input$primary
+		primary_filename <- switch(primary,
+								   'Spectrally flat (e.g. 80:20 beamsplitter)' = 'primary_flat.csv',
+								   'Di03-R405/488/561/635' = 'primary_opm.csv',
+								   'Di+Em 405/470/555/640' = 'primary_crest.csv',
+								   'Di03-R405/488/561/635 + notch' = 'primary_opm_with_notch.csv')
+		
+		primary_df <- read.csv(primary_filename)
 	})
 	
 	
