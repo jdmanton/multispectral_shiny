@@ -443,6 +443,7 @@ server <- function(input, output) {
 		filename = function() {
 			selected_names <- c(input$f1n, input$f2n, input$f3n, input$f4n, input$f5n, input$f6n, input$f7n, input$f8n)
 			selected_names <- selected_names[selected_names != "**None**"]
+			selected_names <- sort(selected_names)
 			selected_names <- paste(selected_names, collapse="_")
 			selected_names <- gsub(" ", "_", selected_names)
 			filename <- ifelse(input$dset == 'Zeiss QUASAR detector (reflection mode)', paste('QUASAR_mixing_matrix_', selected_names, ".csv", sep = ""), paste('PRISM_mixing_matrix_', selected_names, ".csv", sep = ""))
